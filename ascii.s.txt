@@ -1,0 +1,39 @@
+	.file	"ascii.c"
+	.text
+	.globl	main
+	.type	main, @function
+main:
+.LFB0:
+	.cfi_startproc
+	pushq	%rbp              ; 保存栈基址寄存器，建立栈帧前的现场保护
+	movq	%rsp, %rbp        ; 将栈顶指针赋值给rbp，建立当前函数的栈帧
+	subq	$16, %rsp         ; 在栈上分配16字节空间，用于存放局部变量
+	movb	$97, -1(%rbp)     ; char ch = 'a'，97是字符'a'对应的ASCII码
+	movl	$0, -8(%rbp)      ; int i = 0，初始化外层循环变量
+	jmp	.L2                 ; 跳转到外层循环的条件判断处
+.L3:                        ; 外层循环体入口
+	movl	$0, -12(%rbp)     ; int j = 0，初始化内层循环变量
+	jmp	.L4                 ; 跳转到内层循环的条件判断处
+.L5:                        ; 内层循环体入口
+	movsbl	-1(%rbp), %eax    ; 取出变量ch的值，扩展为32位存入eax寄存器
+	movzbl	%al, %edi         ; 将字符作为第一个参数，准备调用putchar
+	call	putchar@PLT       ; 调用C标准库函数，输出当前字符
+	addb	$1, -1(%rbp)      ; ch++，字符ASCII码自增1，切换到下一个字母
+	addl	$1, -12(%rbp)     ; j++，内层循环计数加1
+.L4:                        ; 内层循环条件判断
+	cmpl	$12, -12(%rbp)    ; 比较j与12（j < 13 等价于 j <= 12）
+	jle	.L5                 ; 若条件成立，跳回内层循环体继续执行
+	movl	$10, %edi         ; 将换行符'\n'（ASCII码10）作为参数
+	call	putchar@PLT       ; 输出换行符，实现每行13个字符后换行
+	addl	$1, -8(%rbp)      ; i++，外层循环计数加1
+.L2:                        ; 外层循环条件判断
+	cmpl	$1, -8(%rbp)      ; 比较i与1（i < 2 等价于 i <= 1）
+	jle	.L3                 ; 若条件成立，跳回外层循环体继续执行
+	movl	$0, %eax          ; 设置函数返回值为0，对应return 0
+	leave                     ; 销毁栈帧，恢复rsp和rbp寄存器
+	ret                       ; main函数返回，程序执行结束
+	.cfi_endproc
+.LFE0:
+	.size	main, .-main
+	.ident	"GCC: (GNU) 11.2.0"
+	.section	.note.GNU-stack,"",@progbits

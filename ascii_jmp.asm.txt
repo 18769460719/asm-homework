@@ -1,0 +1,33 @@
+; ascii_jmp.asm：条件跳转版本，不使用loop指令
+.model small
+.stack 100h
+.code
+start:
+    mov cx, 2        ; 外层循环：共2行
+    mov bl, 'a'      ; 当前字符初始为'a'
+outer_loop:
+    push cx          ; 保存外层循环计数
+    mov cx, 13       ; 内层循环：每行13个字符
+inner_loop:
+    mov dl, bl
+    mov ah, 02h
+    int 21h          ; 打印单个字符
+    inc bl           ; 字符ASCII码+1
+    dec cx           ; 计数减1，替代loop的自动减1
+    jnz inner_loop   ; 计数不为0则继续内层循环
+
+    ; 输出回车换行
+    mov dl, 0Dh
+    mov ah, 02h
+    int 21h
+    mov dl, 0Ah
+    mov ah, 02h
+    int 21h
+
+    pop cx           ; 恢复外层循环计数
+    dec cx
+    jnz outer_loop   ; 外层循环条件跳转
+
+    mov ah, 4Ch
+    int 21h
+end start

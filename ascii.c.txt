@@ -1,0 +1,13 @@
+#include stdio.h
+int main()
+{
+    char ch = 'a';
+    int i, j;
+    for(i = 0; i  2; i++){         外层循环：2行
+        for(j = 0; j  13; j++){    内层循环：每行13个字符
+            putchar(ch++);
+        }
+        putchar('n');               换行
+    }
+    return 0;
+}
