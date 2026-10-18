@@ -1,0 +1,97 @@
+C 源程序：
+    int n = 100;
+    int sum = 0;
+    for (i = 1; i <= n; i++) {
+        sum += i;
+    }
+    printf("%d\n", sum);
+
+编译器：
+    Microsoft (R) Optimizing Compiler 19.12.25835 (x64)
+
+已实际验证的编译命令：
+    cl /nologo /Od /MT sum_c.c
+
+main 函数的真实反汇编（dumpbin /disasm:nobytes sum_c.exe）：
+
+0000000140001000: sub   rsp,38h
+; 在栈上分配 56 字节，用于局部变量 n、sum、i，并满足函数调用的栈对齐要求。
+
+0000000140001004: mov   dword ptr [rsp+28h],64h
+; n = 100。64h 是十进制 100 的十六进制写法。
+
+000000014000100C: mov   dword ptr [rsp+24h],0
+; sum = 0。
+
+0000000140001014: mov   dword ptr [rsp+20h],1
+; i = 1，对应 for 循环的初始化部分。
+
+000000014000101C: jmp   0000000140001028
+; 先跳到循环条件判断处，这样不会提前执行循环体。
+
+000000014000101E: mov   eax,dword ptr [rsp+20h]
+; 取出变量 i。这里对应循环的 i++ 部分。
+
+0000000140001022: inc   eax
+; i 自增 1。
+
+0000000140001024: mov   dword ptr [rsp+20h],eax
+; 将自增后的 i 写回内存。
+
+0000000140001028: mov   eax,dword ptr [rsp+28h]
+; 将 n 装入 EAX。
+
+000000014000102C: cmp   dword ptr [rsp+20h],eax
+; 比较 i 和 n。
+
+0000000140001030: jg    0000000140001044
+; 如果 i > n 就退出循环，否则继续执行循环体。
+
+0000000140001032: mov   eax,dword ptr [rsp+20h]
+; 取出 i。
+
+0000000140001036: mov   ecx,dword ptr [rsp+24h]
+; 取出当前的 sum。
+
+000000014000103A: add   ecx,eax
+; ECX = sum + i，对应 C 语句 sum += i。
+
+000000014000103C: mov   eax,ecx
+; 将新的和放入 EAX。
+
+000000014000103E: mov   dword ptr [rsp+24h],eax
+; 把新的和写回局部变量 sum。
+
+0000000140001042: jmp   000000014000101E
+; 跳回去执行 i++，然后再次判断循环条件。
+
+0000000140001044: mov   edx,dword ptr [rsp+24h]
+; 将最终结果装入 EDX。Windows x64 调用约定中，EDX 是第二个参数。
+
+0000000140001048: lea   rcx,[000000014001C000h]
+; RCX 是第一个参数，这里是 "%d\n" 格式字符串的地址。
+
+000000014000104F: call  00000001400010C0
+; 调用 printf，将 EDX 中的 5050 按十进制格式输出。
+
+0000000140001054: xor   eax,eax
+; 设置返回值为 0。
+
+0000000140001056: add   rsp,38h
+; 释放前面分配的局部栈空间。
+
+000000014000105A: ret
+; main 函数返回。
+
+反汇编与 C 代码的对应关系：
+    C：for (i = 1; i <= n; i++)
+    汇编：先把 i 初始化为 1，再比较 i 和 n，用 jg 跳出循环。
+
+    C：sum += i;
+    汇编：取出 i 和 sum，执行 add，再把结果写回 sum。
+
+    C：printf("%d\n", sum);
+    汇编：把最终和放入 EDX，把格式字符串地址放入 RCX，再调用 printf。
+
+运行结果：
+    编译后的程序已经实际运行，屏幕输出为 5050。
