@@ -1,0 +1,141 @@
+C source:
+    printf("The 9mul9 table:\n");
+    for (row = 9; row >= 1; row--) {
+        for (col = 1; col <= row; col++) {
+            printf("%d*%d=%d", row, col, row * col);
+            if (col == row) putchar('\n');
+            else putchar('\t');
+        }
+    }
+
+Compiler:
+    Microsoft (R) Optimizing Compiler 19.12.25835 (x64)
+
+Verified command:
+    cl /nologo /Od /MT mul9_c.c
+
+Actual disassembly of main (dumpbin /disasm:nobytes mul9_c.exe):
+
+0000000140001000: sub   rsp,38h
+; Allocate 56 bytes of stack space for row, col and call alignment.
+
+0000000140001004: lea   rcx,[000000014001C000h]
+; RCX receives the first x64 argument: the title format string.
+
+000000014000100B: call  0000000140001100
+; Call printf to print "The 9mul9 table:\n".
+
+0000000140001010: mov   dword ptr [rsp+20h],9
+; row = 9. This begins the descending outer loop.
+
+0000000140001018: jmp   0000000140001024
+; Jump to the outer-loop condition before executing its body.
+
+000000014000101A: mov   eax,dword ptr [rsp+20h]
+; Load row into EAX. This is the outer-loop decrement section.
+
+000000014000101E: dec   eax
+; row--.
+
+0000000140001020: mov   dword ptr [rsp+20h],eax
+; Store the decremented row.
+
+0000000140001024: cmp   dword ptr [rsp+20h],1
+; Compare row with 1.
+
+0000000140001029: jl    000000014000108E
+; If row < 1, the outer loop is finished.
+
+000000014000102B: mov   dword ptr [rsp+24h],1
+; col = 1. Start the inner loop.
+
+0000000140001033: jmp   000000014000103F
+; Jump to the inner-loop condition.
+
+0000000140001035: mov   eax,dword ptr [rsp+24h]
+; Load col. This is the inner-loop increment section.
+
+0000000140001039: inc   eax
+; col++.
+
+000000014000103B: mov   dword ptr [rsp+24h],eax
+; Store the incremented col.
+
+000000014000103F: mov   eax,dword ptr [rsp+20h]
+; Load row into EAX for the inner-loop limit.
+
+0000000140001043: cmp   dword ptr [rsp+24h],eax
+; Compare col with row.
+
+0000000140001047: jg    000000014000108C
+; If col > row, jump to the code that continues the next row.
+
+0000000140001049: mov   eax,dword ptr [rsp+20h]
+; Load row into EAX.
+
+000000014000104D: imul  eax,dword ptr [rsp+24h]
+; Signed multiply row by col: EAX = row * col.
+
+0000000140001052: mov   r9d,eax
+; R9D is the fourth x64 argument: the product.
+
+0000000140001055: mov   r8d,dword ptr [rsp+24h]
+; R8D is the third argument: col.
+
+000000014000105A: mov   edx,dword ptr [rsp+20h]
+; EDX is the second argument: row.
+
+000000014000105E: lea   rcx,[000000014001C018h]
+; RCX is the first argument: the "%d*%d=%d" format string.
+
+0000000140001065: call  0000000140001100
+; Call printf to print one multiplication equation.
+
+000000014000106A: mov   eax,dword ptr [rsp+20h]
+; Load row for the decision after printf.
+
+000000014000106E: cmp   dword ptr [rsp+24h],eax
+; Compare col with row.
+
+0000000140001072: jne   0000000140001080
+; If this is not the last item, jump to the tab-output branch.
+
+0000000140001074: mov   ecx,0Ah
+; ECX = 10, the newline character.
+
+0000000140001079: call  00000001400028F8
+; Call putchar('\n') after the final equation of a row.
+
+000000014000107E: jmp   000000014000108A
+; Skip the tab-output branch.
+
+0000000140001080: mov   ecx,9
+; ECX = 9, the tab character.
+
+0000000140001085: call  00000001400028F8
+; Call putchar('\t') to align the next equation.
+
+000000014000108A: jmp   0000000140001035
+; Jump back to col++ and test the inner loop again.
+
+000000014000108C: jmp   000000014000101A
+; Inner loop finished; continue with row--.
+
+000000014000108E: xor   eax,eax
+; return 0.
+
+0000000140001090: add   rsp,38h
+; Release the local stack area.
+
+0000000140001094: ret
+; Return from main.
+
+Mapping back to the C code:
+    Outer loop: [rsp+20h] stores row, initialized to 9, decremented until < 1.
+    Inner loop: [rsp+24h] stores col, initialized to 1, compared with row.
+    Multiplication: imul calculates row * col into EAX.
+    Output: printf receives row, col and product in RDX, R8D and R9D.
+    Separator: putchar prints newline when col == row; otherwise it prints a tab.
+
+Verification:
+    The compiled C program was run and its normalized output matched MUL9.EXE.

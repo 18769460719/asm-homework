@@ -1,0 +1,55 @@
+第四次作业验证记录
+
+一、DOS 汇编程序 MUL9.EXE
+
+使用 MASM 5.00 汇编、LINK 链接，并在 DOSBox 0.74 中实际运行。
+
+输出结构：
+    The 9mul9 table:
+    9*1=9 ... 9*9=81
+    8*1=8 ... 8*8=64
+    ...
+    2*1=2 2*2=4
+    1*1=1
+
+检查结果：
+- 共 9 行，行号严格从 9 递减到 1。
+- 第 N 行恰好有 N 个乘法公式。
+- 每个乘积由 MUL SI 指令计算。
+- 每行最后一个公式后输出 CRLF，其他公式后输出 TAB。
+- 输出文件共有 10 个 CRLF（标题行加 9 行表格）和 36 个 TAB。
+- DOSBox 中显示完整，无公式缺失或错位。
+
+二、过程调用与寄存器保护
+
+主过程 start：
+- 使用 BX 保存当前行号。
+- 每次把 BX 复制到 CX，作为当前行的内层循环次数。
+- 调用 print_row。
+
+过程 print_row：
+- 使用主过程传入的 BX（行号）和 CX（列数）。
+- 进入时 push AX、BX、CX、DX、SI。
+- 使用 SI 保存当前乘数，使用 MUL SI 计算乘积。
+- 返回前以相反顺序 pop SI、DX、CX、BX、AX。
+- 使用 RET 返回主过程。
+
+过程 print_unsigned：
+- 由 print_row 通过 CALL 再次调用。
+- 使用 DIV BX 反复除以 10，逐位输出十进制结果。
+- 进入和返回时保存、恢复 AX、BX、CX、DX。
+
+三、C 程序
+
+源码：mul9_c.c
+可执行文件：mul9_c.exe
+
+编译方式：
+    cl /nologo /Od /MT mul9_c.c
+
+程序实际输出与 DOS 汇编版本的标题、9 行内容和列分隔一致。
+真实反汇编见 mul9_c_disasm_notes.txt，完整编译汇编清单见 mul9_c_compiler.asm。
+
+四、验证截图
+
+docs/dosbox_demo.png 是在 DOSBox 中运行 MUL9.EXE 后由 DOSBox 自身截取的完整 640x400 屏幕。
