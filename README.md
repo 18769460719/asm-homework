@@ -15,6 +15,7 @@
 
 - [assignment3_sum/README.md](assignment3_sum/README.md)
 - [assignment3_sum/verification.txt](assignment3_sum/verification.txt)
+- [assignment3_sum/docs/dosbox_demo.png](assignment3_sum/docs/dosbox_demo.png)
 
 ## 第四次作业
 
