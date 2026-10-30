@@ -1,0 +1,171 @@
+C source excerpt:
+    static const unsigned char g_table[9][9] = {
+        {7, 2, 3, 4, 5, 6, 7, 8, 9},
+        ...
+    };
+
+    static int check_table(const unsigned char table[9][9], const char *label)
+    {
+        int errors = 0;
+        int row;
+        int col;
+        for (row = 1; row <= 9; row++) {
+            for (col = 1; col <= 9; col++) {
+                if (table[row - 1][col - 1] != row * col) {
+                    printf("%d %d    error\n", row, col);
+                    errors++;
+                }
+            }
+        }
+        return errors;
+    }
+
+Compiler:
+    Microsoft (R) Optimizing Compiler 19.12.25835 (x64)
+
+Verified command:
+    cl /nologo /Od /MT mulchk_c.c
+
+Actual disassembly of check_table:
+
+0000000140001000: mov   qword ptr [rsp+10h],rdx
+0000000140001005: mov   qword ptr [rsp+8],rcx
+; Save the two x64 parameters: RCX = table address, RDX = label address.
+
+000000014000100A: sub   rsp,38h
+; Allocate local stack space for errors, row, col and call alignment.
+
+000000014000100E: mov   dword ptr [rsp+28h],0
+; errors = 0.
+
+0000000140001016: mov   rdx,qword ptr [rsp+48h]
+000000014000101B: lea   rcx,[000000014001C000h]
+0000000140001022: call  0000000140001340
+; Call printf("%s\nx y    result\n", label).
+
+0000000140001027: mov   dword ptr [rsp+24h],1
+; row = 1.
+
+000000014000102F: jmp   000000014000103B
+000000014000103B: cmp   dword ptr [rsp+24h],9
+0000000140001040: jg    00000001400010B1
+; Outer loop condition: continue while row <= 9.
+
+0000000140001042: mov   dword ptr [rsp+20h],1
+; col = 1.
+
+0000000140001056: cmp   dword ptr [rsp+20h],9
+000000014000105B: jg    00000001400010AF
+; Inner loop condition: continue while col <= 9.
+
+000000014000105D: mov   eax,dword ptr [rsp+24h]
+0000000140001061: dec   eax
+0000000140001063: cdqe
+0000000140001065: imul  rax,rax,9
+; Compute (row - 1) * 9.
+
+0000000140001069: mov   rcx,qword ptr [rsp+40h]
+000000014000106E: add   rcx,rax
+0000000140001071: mov   rax,rcx
+; Add the row offset to the table base.
+
+0000000140001074: mov   ecx,dword ptr [rsp+20h]
+0000000140001078: dec   ecx
+000000014000107A: movsxd rcx,ecx
+000000014000107D: movzx eax,byte ptr [rax+rcx]
+; Load table[row - 1][col - 1] as an unsigned byte.
+
+0000000140001081: mov   ecx,dword ptr [rsp+24h]
+0000000140001085: imul  ecx,dword ptr [rsp+20h]
+; Expected value = row * col.
+
+000000014000108A: cmp   eax,ecx
+000000014000108C: je    00000001400010AD
+; Skip output when the actual value equals the expected value.
+
+000000014000108E: mov   r8d,dword ptr [rsp+20h]
+0000000140001093: mov   edx,dword ptr [rsp+24h]
+0000000140001097: lea   rcx,[000000014001C018h]
+000000014000109E: call  0000000140001340
+; Call printf("%d %d    error\n", row, col).
+
+00000001400010A3: mov   eax,dword ptr [rsp+28h]
+00000001400010A7: inc   eax
+00000001400010A9: mov   dword ptr [rsp+28h],eax
+; errors++.
+
+00000001400010AD: jmp   000000014000104C
+00000001400010AF: jmp   0000000140001031
+; Update col/row and repeat the loops.
+
+00000001400010B1: mov   eax,dword ptr [rsp+28h]
+00000001400010B9: ret
+; Return the number of errors in EAX.
+
+Actual disassembly of main:
+
+00000001400010C0: sub   rsp,0A8h
+; main allocates 168 bytes on its stack.
+
+00000001400010C7: mov   rax,qword ptr [000000014001C080h]
+00000001400010CE: xor   rax,rsp
+00000001400010D1: mov   qword ptr [rsp+90h],rax
+; Store the stack security cookie.
+
+00000001400010D9: mov   byte ptr [rsp+30h],7
+00000001400010DE: mov   byte ptr [rsp+31h],2
+...
+0000000140001269: mov   byte ptr [rsp+80h],51h
+; Initialize the 81 bytes of local_table directly on the stack.
+
+0000000140001271: lea   rdx,[000000014001C028h]
+0000000140001278: lea   rcx,[00000001400122D0h]
+000000014000127F: call  0000000140001000
+; check_table(g_table, "Global table").
+
+0000000140001298: lea   rdx,[000000014001C050h]
+000000014000129F: lea   rcx,[rsp+30h]
+00000001400012A4: call  0000000140001000
+; check_table(local_table, "Local table");
+; RCX points at the local stack table, not at a constant data address.
+
+00000001400012BD: xor   eax,eax
+00000001400012BF: mov   rcx,qword ptr [rsp+90h]
+00000001400012C7: xor   rcx,rsp
+00000001400012CA: call  0000000140001430
+; Verify the stack cookie before returning.
+
+Data-layout evidence from the compiler listing:
+
+    CONST SEGMENT
+    g_table DB 07H
+            DB 02H
+            ...
+    CONST ENDS
+
+; g_table lives in the read-only constant segment. main only passes its address.
+
+    local_table$ = 48
+    ...
+    mov BYTE PTR local_table$[rsp], 7
+    mov BYTE PTR local_table$[rsp+1], 2
+    ...
+
+; local_table is part of main's stack frame. Because it has an initializer,
+; main must allocate and write all 81 bytes before calling check_table.
+
+Global vs local conclusion:
+    Global table:
+        - has static storage duration
+        - lives in the CONST segment
+        - initialized once at program load
+        - does not increase main's stack frame
+    Local table:
+        - has automatic storage duration
+        - lives inside main's stack frame
+        - initialized every time main runs
+        - increases stack allocation and produces the long sequence of byte stores
+
+Verification:
+    Both global and local checks print the same five error positions:
+    (1,1), (2,3), (4,5), (6,6), (8,8).

@@ -1,0 +1,60 @@
+作业题目 4（二）九九乘法表纠错验证记录
+
+一、标准答案
+
+表中错误位置：
+    (1,1)  表中为 7，应为 1
+    (2,3)  表中为 7，应为 6
+    (4,5)  表中为 7，应为 20
+    (6,6)  表中为 7，应为 36
+    (8,8)  表中为 7，应为 64
+
+二、DOS 汇编程序
+
+源文件：mulchk.asm
+可执行文件：bin/MULCHK.EXE
+
+实际 DOS 输出：
+    x y    result
+    1 1    error
+    2 3    error
+    4 5    error
+    6 6    error
+    8 8    error
+    accomplish!
+
+检查项：
+- 使用数据段中的连续二维表存储。
+- 外层行循环和内层列循环均为 1~9。
+- 每行通过 (row-1)*9 计算首元素偏移。
+- 实际值从 DS:SI 读取。
+- 期望值通过行号×列号计算。
+- 所有错误位置正确输出。
+- check_table 使用 CALL/RET，并保存恢复 AX、BX、CX、DX、SI、DI、BP。
+
+三、C 程序
+
+源文件：mulchk_c.c
+可执行文件：bin/mulchk_c.exe
+
+分别运行全局表和局部表检查，两者都输出 5 个错误位置：
+    1 1
+    2 3
+    4 5
+    6 6
+    8 8
+
+全局表 g_table：
+- 位于 CONST 常量段。
+- 只保存一份，程序加载时完成初始化。
+
+局部表 local_table：
+- 位于 main 的栈帧。
+- main 每次运行时都要分配 81 字节并逐项写入初值。
+- 反汇编中可以看到连续的 BYTE PTR [rsp+30h ... rsp+80h] 写入。
+
+详细反汇编见 mulchk_c_disasm_notes.txt。
+
+四、截图
+
+docs/dosbox_demo.png 为 DOSBox 实际运行截图。
