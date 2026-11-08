@@ -1,0 +1,54 @@
+作业 5 验证记录
+========================================
+
+一、输入输出对照
+n      期望值                      程序输出                     结果
+0      0                        0                        OK
+1      1                        1                        OK
+2      1                        1                        OK
+5      5                        5                        OK
+10     55                       55                       OK
+20     6765                     6765                     OK
+30     832040                   832040                   OK
+50     12586269025              12586269025              OK
+90     2880067194370816120      2880067194370816120      OK
+100    354224848179261915075    354224848179261915075    OK
+
+期望值用 Python 的大整数算，docs/out*.txt 是 DOSBox 里重定向出来的实际结果。
+
+二、栈空间
+每层：7 个 push（14 字节）+ call 压入的返回地址（2 字节）= 16 字节
+n=100 最深 100 层：100 * 16 = 1600 字节 = 0x640
+声明栈 4096 字节（4 KB），富余 2496 字节
+
+三、跟踪摘录（n=5）
+n = 5
+
+call n=5  sp=0FF0
+call n=4  sp=0FE0
+call n=3  sp=0FD0
+call n=2  sp=0FC0
+call n=1  sp=0FB0
+ret  n=1  sp=0FAE
+call n=0  sp=0FB0
+ret  n=0  sp=0FAE
+ret  n=2  sp=0FBE
+call n=1  sp=0FC0
+ret  n=1  sp=0FBE
+ret  n=3  sp=0FCE
+call n=2  sp=0FD0
+ret  n=2  sp=0FCE
+ret  n=4  sp=0FDE
+call n=3  sp=0FE0
+ret  n=3  sp=0FDE
+ret  n=5  sp=0FEE
+F(n) = 5
+
+每进一层 SP 减 0x10，返回一层加 0x10；n=5 最深到 0FB0，与 5*16=80 相符。
+
+四、n=100 的栈底
+进入 fib(100) 时 SP=0FF0，最深 fib(1) 时 SP=09B0，差 0x640=1600 字节，与 100*16 一致。
+
+五、C 版本
+fib_c.c 采用同样的记忆化 + 万进制，运行结果与汇编一致。
+反汇编见 fib_c_obj_disasm.txt，注释见 fib_c_disasm_notes.txt。

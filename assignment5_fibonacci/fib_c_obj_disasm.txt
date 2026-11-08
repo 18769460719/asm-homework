@@ -1,0 +1,346 @@
+﻿
+Dump of file D:\huibian\myasm\asm-homework\assignment5_fibonacci\fib_c.obj
+
+File Type: COFF OBJECT
+
+fib:
+  0000000000000000: 89 4C 24 08        mov         dword ptr [rsp+8],ecx
+  0000000000000004: 48 83 EC 38        sub         rsp,38h
+  0000000000000008: 48 63 44 24 40     movsxd      rax,dword ptr [rsp+40h]
+  000000000000000D: 48 8D 0D 00 00 00  lea         rcx,[done]
+                    00
+  0000000000000014: 0F B6 04 01        movzx       eax,byte ptr [rcx+rax]
+  0000000000000018: 85 C0              test        eax,eax
+  000000000000001A: 74 05              je          0000000000000021
+  000000000000001C: E9 7A 01 00 00     jmp         000000000000019B
+  0000000000000021: 83 7C 24 40 01     cmp         dword ptr [rsp+40h],1
+  0000000000000026: 7F 7B              jg          00000000000000A3
+  0000000000000028: 48 63 44 24 40     movsxd      rax,dword ptr [rsp+40h]
+  000000000000002D: 48 6B C0 0C        imul        rax,rax,0Ch
+  0000000000000031: 48 8D 0D 00 00 00  lea         rcx,[memo]
+                    00
+  0000000000000038: 48 03 C8           add         rcx,rax
+  000000000000003B: 48 8B C1           mov         rax,rcx
+  000000000000003E: B9 02 00 00 00     mov         ecx,2
+  0000000000000043: 48 6B C9 00        imul        rcx,rcx,0
+  0000000000000047: 0F B7 54 24 40     movzx       edx,word ptr [rsp+40h]
+  000000000000004C: 66 89 14 08        mov         word ptr [rax+rcx],dx
+  0000000000000050: C7 44 24 20 01 00  mov         dword ptr [rsp+20h],1
+                    00 00
+  0000000000000058: EB 0A              jmp         0000000000000064
+  000000000000005A: 8B 44 24 20        mov         eax,dword ptr [rsp+20h]
+  000000000000005E: FF C0              inc         eax
+  0000000000000060: 89 44 24 20        mov         dword ptr [rsp+20h],eax
+  0000000000000064: 83 7C 24 20 06     cmp         dword ptr [rsp+20h],6
+  0000000000000069: 7D 23              jge         000000000000008E
+  000000000000006B: 48 63 44 24 40     movsxd      rax,dword ptr [rsp+40h]
+  0000000000000070: 48 6B C0 0C        imul        rax,rax,0Ch
+  0000000000000074: 48 8D 0D 00 00 00  lea         rcx,[memo]
+                    00
+  000000000000007B: 48 03 C8           add         rcx,rax
+  000000000000007E: 48 8B C1           mov         rax,rcx
+  0000000000000081: 48 63 4C 24 20     movsxd      rcx,dword ptr [rsp+20h]
+  0000000000000086: 33 D2              xor         edx,edx
+  0000000000000088: 66 89 14 48        mov         word ptr [rax+rcx*2],dx
+  000000000000008C: EB CC              jmp         000000000000005A
+  000000000000008E: 48 63 44 24 40     movsxd      rax,dword ptr [rsp+40h]
+  0000000000000093: 48 8D 0D 00 00 00  lea         rcx,[done]
+                    00
+  000000000000009A: C6 04 01 01        mov         byte ptr [rcx+rax],1
+  000000000000009E: E9 F8 00 00 00     jmp         000000000000019B
+  00000000000000A3: 8B 44 24 40        mov         eax,dword ptr [rsp+40h]
+  00000000000000A7: FF C8              dec         eax
+  00000000000000A9: 8B C8              mov         ecx,eax
+  00000000000000AB: E8 00 00 00 00     call        fib
+  00000000000000B0: 8B 44 24 40        mov         eax,dword ptr [rsp+40h]
+  00000000000000B4: 83 E8 02           sub         eax,2
+  00000000000000B7: 8B C8              mov         ecx,eax
+  00000000000000B9: E8 00 00 00 00     call        fib
+  00000000000000BE: C7 44 24 28 00 00  mov         dword ptr [rsp+28h],0
+                    00 00
+  00000000000000C6: C7 44 24 20 00 00  mov         dword ptr [rsp+20h],0
+                    00 00
+  00000000000000CE: EB 0A              jmp         00000000000000DA
+  00000000000000D0: 8B 44 24 20        mov         eax,dword ptr [rsp+20h]
+  00000000000000D4: FF C0              inc         eax
+  00000000000000D6: 89 44 24 20        mov         dword ptr [rsp+20h],eax
+  00000000000000DA: 83 7C 24 20 06     cmp         dword ptr [rsp+20h],6
+  00000000000000DF: 0F 8D A6 00 00 00  jge         000000000000018B
+  00000000000000E5: 8B 44 24 40        mov         eax,dword ptr [rsp+40h]
+  00000000000000E9: FF C8              dec         eax
+  00000000000000EB: 48 98              cdqe
+  00000000000000ED: 48 6B C0 0C        imul        rax,rax,0Ch
+  00000000000000F1: 48 8D 0D 00 00 00  lea         rcx,[memo]
+                    00
+  00000000000000F8: 48 03 C8           add         rcx,rax
+  00000000000000FB: 48 8B C1           mov         rax,rcx
+  00000000000000FE: 48 63 4C 24 20     movsxd      rcx,dword ptr [rsp+20h]
+  0000000000000103: 0F B7 04 48        movzx       eax,word ptr [rax+rcx*2]
+  0000000000000107: 8B 4C 24 40        mov         ecx,dword ptr [rsp+40h]
+  000000000000010B: 83 E9 02           sub         ecx,2
+  000000000000010E: 48 63 C9           movsxd      rcx,ecx
+  0000000000000111: 48 6B C9 0C        imul        rcx,rcx,0Ch
+  0000000000000115: 48 8D 15 00 00 00  lea         rdx,[memo]
+                    00
+  000000000000011C: 48 03 D1           add         rdx,rcx
+  000000000000011F: 48 8B CA           mov         rcx,rdx
+  0000000000000122: 48 63 54 24 20     movsxd      rdx,dword ptr [rsp+20h]
+  0000000000000127: 0F B7 0C 51        movzx       ecx,word ptr [rcx+rdx*2]
+  000000000000012B: 8B 54 24 28        mov         edx,dword ptr [rsp+28h]
+  000000000000012F: 03 D0              add         edx,eax
+  0000000000000131: 8B C2              mov         eax,edx
+  0000000000000133: 03 C8              add         ecx,eax
+  0000000000000135: 8B C1              mov         eax,ecx
+  0000000000000137: 89 44 24 24        mov         dword ptr [rsp+24h],eax
+  000000000000013B: C7 44 24 28 00 00  mov         dword ptr [rsp+28h],0
+                    00 00
+  0000000000000143: 81 7C 24 24 10 27  cmp         dword ptr [rsp+24h],2710h
+                    00 00
+  000000000000014B: 7C 15              jl          0000000000000162
+  000000000000014D: 8B 44 24 24        mov         eax,dword ptr [rsp+24h]
+  0000000000000151: 2D 10 27 00 00     sub         eax,2710h
+  0000000000000156: 89 44 24 24        mov         dword ptr [rsp+24h],eax
+  000000000000015A: C7 44 24 28 01 00  mov         dword ptr [rsp+28h],1
+                    00 00
+  0000000000000162: 48 63 44 24 40     movsxd      rax,dword ptr [rsp+40h]
+  0000000000000167: 48 6B C0 0C        imul        rax,rax,0Ch
+  000000000000016B: 48 8D 0D 00 00 00  lea         rcx,[memo]
+                    00
+  0000000000000172: 48 03 C8           add         rcx,rax
+  0000000000000175: 48 8B C1           mov         rax,rcx
+  0000000000000178: 48 63 4C 24 20     movsxd      rcx,dword ptr [rsp+20h]
+  000000000000017D: 0F B7 54 24 24     movzx       edx,word ptr [rsp+24h]
+  0000000000000182: 66 89 14 48        mov         word ptr [rax+rcx*2],dx
+  0000000000000186: E9 45 FF FF FF     jmp         00000000000000D0
+  000000000000018B: 48 63 44 24 40     movsxd      rax,dword ptr [rsp+40h]
+  0000000000000190: 48 8D 0D 00 00 00  lea         rcx,[done]
+                    00
+  0000000000000197: C6 04 01 01        mov         byte ptr [rcx+rax],1
+  000000000000019B: 48 83 C4 38        add         rsp,38h
+  000000000000019F: C3                 ret
+  00000000000001A0: CC                 int         3
+  00000000000001A1: CC                 int         3
+  00000000000001A2: CC                 int         3
+  00000000000001A3: CC                 int         3
+  00000000000001A4: CC                 int         3
+  00000000000001A5: CC                 int         3
+  00000000000001A6: CC                 int         3
+  00000000000001A7: CC                 int         3
+  00000000000001A8: CC                 int         3
+  00000000000001A9: CC                 int         3
+  00000000000001AA: CC                 int         3
+  00000000000001AB: CC                 int         3
+  00000000000001AC: CC                 int         3
+  00000000000001AD: CC                 int         3
+  00000000000001AE: CC                 int         3
+  00000000000001AF: CC                 int         3
+print_fib:
+  00000000000001B0: 89 4C 24 08        mov         dword ptr [rsp+8],ecx
+  00000000000001B4: 48 83 EC 38        sub         rsp,38h
+  00000000000001B8: C7 44 24 20 05 00  mov         dword ptr [rsp+20h],5
+                    00 00
+  00000000000001C0: 83 7C 24 20 00     cmp         dword ptr [rsp+20h],0
+  00000000000001C5: 7E 2F              jle         00000000000001F6
+  00000000000001C7: 48 63 44 24 40     movsxd      rax,dword ptr [rsp+40h]
+  00000000000001CC: 48 6B C0 0C        imul        rax,rax,0Ch
+  00000000000001D0: 48 8D 0D 00 00 00  lea         rcx,[memo]
+                    00
+  00000000000001D7: 48 03 C8           add         rcx,rax
+  00000000000001DA: 48 8B C1           mov         rax,rcx
+  00000000000001DD: 48 63 4C 24 20     movsxd      rcx,dword ptr [rsp+20h]
+  00000000000001E2: 0F B7 04 48        movzx       eax,word ptr [rax+rcx*2]
+  00000000000001E6: 85 C0              test        eax,eax
+  00000000000001E8: 75 0C              jne         00000000000001F6
+  00000000000001EA: 8B 44 24 20        mov         eax,dword ptr [rsp+20h]
+  00000000000001EE: FF C8              dec         eax
+  00000000000001F0: 89 44 24 20        mov         dword ptr [rsp+20h],eax
+  00000000000001F4: EB CA              jmp         00000000000001C0
+  00000000000001F6: 48 63 44 24 40     movsxd      rax,dword ptr [rsp+40h]
+  00000000000001FB: 48 6B C0 0C        imul        rax,rax,0Ch
+  00000000000001FF: 48 8D 0D 00 00 00  lea         rcx,[memo]
+                    00
+  0000000000000206: 48 03 C8           add         rcx,rax
+  0000000000000209: 48 8B C1           mov         rax,rcx
+  000000000000020C: 48 63 4C 24 20     movsxd      rcx,dword ptr [rsp+20h]
+  0000000000000211: 0F B7 04 48        movzx       eax,word ptr [rax+rcx*2]
+  0000000000000215: 8B D0              mov         edx,eax
+  0000000000000217: 48 8D 0D 00 00 00  lea         rcx,[$SG7100]
+                    00
+  000000000000021E: E8 00 00 00 00     call        printf
+  0000000000000223: 8B 44 24 20        mov         eax,dword ptr [rsp+20h]
+  0000000000000227: FF C8              dec         eax
+  0000000000000229: 89 44 24 20        mov         dword ptr [rsp+20h],eax
+  000000000000022D: EB 0A              jmp         0000000000000239
+  000000000000022F: 8B 44 24 20        mov         eax,dword ptr [rsp+20h]
+  0000000000000233: FF C8              dec         eax
+  0000000000000235: 89 44 24 20        mov         dword ptr [rsp+20h],eax
+  0000000000000239: 83 7C 24 20 00     cmp         dword ptr [rsp+20h],0
+  000000000000023E: 7C 2F              jl          000000000000026F
+  0000000000000240: 48 63 44 24 40     movsxd      rax,dword ptr [rsp+40h]
+  0000000000000245: 48 6B C0 0C        imul        rax,rax,0Ch
+  0000000000000249: 48 8D 0D 00 00 00  lea         rcx,[memo]
+                    00
+  0000000000000250: 48 03 C8           add         rcx,rax
+  0000000000000253: 48 8B C1           mov         rax,rcx
+  0000000000000256: 48 63 4C 24 20     movsxd      rcx,dword ptr [rsp+20h]
+  000000000000025B: 0F B7 04 48        movzx       eax,word ptr [rax+rcx*2]
+  000000000000025F: 8B D0              mov         edx,eax
+  0000000000000261: 48 8D 0D 00 00 00  lea         rcx,[$SG7101]
+                    00
+  0000000000000268: E8 00 00 00 00     call        printf
+  000000000000026D: EB C0              jmp         000000000000022F
+  000000000000026F: 48 8D 0D 00 00 00  lea         rcx,[$SG7102]
+                    00
+  0000000000000276: E8 00 00 00 00     call        printf
+  000000000000027B: 48 83 C4 38        add         rsp,38h
+  000000000000027F: C3                 ret
+  0000000000000280: CC                 int         3
+  0000000000000281: CC                 int         3
+  0000000000000282: CC                 int         3
+  0000000000000283: CC                 int         3
+  0000000000000284: CC                 int         3
+  0000000000000285: CC                 int         3
+  0000000000000286: CC                 int         3
+  0000000000000287: CC                 int         3
+  0000000000000288: CC                 int         3
+  0000000000000289: CC                 int         3
+  000000000000028A: CC                 int         3
+  000000000000028B: CC                 int         3
+  000000000000028C: CC                 int         3
+  000000000000028D: CC                 int         3
+  000000000000028E: CC                 int         3
+  000000000000028F: CC                 int         3
+main:
+  0000000000000290: 48 83 EC 38        sub         rsp,38h
+  0000000000000294: 48 8D 0D 00 00 00  lea         rcx,[$SG7107]
+                    00
+  000000000000029B: E8 00 00 00 00     call        printf
+  00000000000002A0: 48 8D 54 24 20     lea         rdx,[rsp+20h]
+  00000000000002A5: 48 8D 0D 00 00 00  lea         rcx,[$SG7109]
+                    00
+  00000000000002AC: E8 00 00 00 00     call        scanf
+  00000000000002B1: 83 F8 01           cmp         eax,1
+  00000000000002B4: 74 13              je          00000000000002C9
+  00000000000002B6: 48 8D 0D 00 00 00  lea         rcx,[$SG7110]
+                    00
+  00000000000002BD: E8 00 00 00 00     call        printf
+  00000000000002C2: B8 01 00 00 00     mov         eax,1
+  00000000000002C7: EB 41              jmp         000000000000030A
+  00000000000002C9: 83 7C 24 20 00     cmp         dword ptr [rsp+20h],0
+  00000000000002CE: 7C 07              jl          00000000000002D7
+  00000000000002D0: 83 7C 24 20 64     cmp         dword ptr [rsp+20h],64h
+  00000000000002D5: 7E 13              jle         00000000000002EA
+  00000000000002D7: 48 8D 0D 00 00 00  lea         rcx,[$SG7113]
+                    00
+  00000000000002DE: E8 00 00 00 00     call        printf
+  00000000000002E3: B8 01 00 00 00     mov         eax,1
+  00000000000002E8: EB 20              jmp         000000000000030A
+  00000000000002EA: 8B 4C 24 20        mov         ecx,dword ptr [rsp+20h]
+  00000000000002EE: E8 00 00 00 00     call        fib
+  00000000000002F3: 48 8D 0D 00 00 00  lea         rcx,[$SG7114]
+                    00
+  00000000000002FA: E8 00 00 00 00     call        printf
+  00000000000002FF: 8B 4C 24 20        mov         ecx,dword ptr [rsp+20h]
+  0000000000000303: E8 00 00 00 00     call        print_fib
+  0000000000000308: 33 C0              xor         eax,eax
+  000000000000030A: 48 83 C4 38        add         rsp,38h
+  000000000000030E: C3                 ret
+
+__local_stdio_printf_options:
+  0000000000000000: 48 8D 05 00 00 00  lea         rax,[?_OptionsStorage@?1??__local_stdio_printf_options@@9@9]
+                    00
+  0000000000000007: C3                 ret
+
+__local_stdio_scanf_options:
+  0000000000000000: 48 8D 05 00 00 00  lea         rax,[?_OptionsStorage@?1??__local_stdio_scanf_options@@9@9]
+                    00
+  0000000000000007: C3                 ret
+
+_vfprintf_l:
+  0000000000000000: 4C 89 4C 24 20     mov         qword ptr [rsp+20h],r9
+  0000000000000005: 4C 89 44 24 18     mov         qword ptr [rsp+18h],r8
+  000000000000000A: 48 89 54 24 10     mov         qword ptr [rsp+10h],rdx
+  000000000000000F: 48 89 4C 24 08     mov         qword ptr [rsp+8],rcx
+  0000000000000014: 48 83 EC 38        sub         rsp,38h
+  0000000000000018: E8 00 00 00 00     call        __local_stdio_printf_options
+  000000000000001D: 48 8B 4C 24 58     mov         rcx,qword ptr [rsp+58h]
+  0000000000000022: 48 89 4C 24 20     mov         qword ptr [rsp+20h],rcx
+  0000000000000027: 4C 8B 4C 24 50     mov         r9,qword ptr [rsp+50h]
+  000000000000002C: 4C 8B 44 24 48     mov         r8,qword ptr [rsp+48h]
+  0000000000000031: 48 8B 54 24 40     mov         rdx,qword ptr [rsp+40h]
+  0000000000000036: 48 8B 08           mov         rcx,qword ptr [rax]
+  0000000000000039: E8 00 00 00 00     call        __stdio_common_vfprintf
+  000000000000003E: 48 83 C4 38        add         rsp,38h
+  0000000000000042: C3                 ret
+
+_vfscanf_l:
+  0000000000000000: 4C 89 4C 24 20     mov         qword ptr [rsp+20h],r9
+  0000000000000005: 4C 89 44 24 18     mov         qword ptr [rsp+18h],r8
+  000000000000000A: 48 89 54 24 10     mov         qword ptr [rsp+10h],rdx
+  000000000000000F: 48 89 4C 24 08     mov         qword ptr [rsp+8],rcx
+  0000000000000014: 48 83 EC 38        sub         rsp,38h
+  0000000000000018: E8 00 00 00 00     call        __local_stdio_scanf_options
+  000000000000001D: 48 8B 4C 24 58     mov         rcx,qword ptr [rsp+58h]
+  0000000000000022: 48 89 4C 24 20     mov         qword ptr [rsp+20h],rcx
+  0000000000000027: 4C 8B 4C 24 50     mov         r9,qword ptr [rsp+50h]
+  000000000000002C: 4C 8B 44 24 48     mov         r8,qword ptr [rsp+48h]
+  0000000000000031: 48 8B 54 24 40     mov         rdx,qword ptr [rsp+40h]
+  0000000000000036: 48 8B 08           mov         rcx,qword ptr [rax]
+  0000000000000039: E8 00 00 00 00     call        __stdio_common_vfscanf
+  000000000000003E: 48 83 C4 38        add         rsp,38h
+  0000000000000042: C3                 ret
+
+printf:
+  0000000000000000: 48 89 4C 24 08     mov         qword ptr [rsp+8],rcx
+  0000000000000005: 48 89 54 24 10     mov         qword ptr [rsp+10h],rdx
+  000000000000000A: 4C 89 44 24 18     mov         qword ptr [rsp+18h],r8
+  000000000000000F: 4C 89 4C 24 20     mov         qword ptr [rsp+20h],r9
+  0000000000000014: 48 83 EC 38        sub         rsp,38h
+  0000000000000018: 48 8D 44 24 48     lea         rax,[rsp+48h]
+  000000000000001D: 48 89 44 24 28     mov         qword ptr [rsp+28h],rax
+  0000000000000022: B9 01 00 00 00     mov         ecx,1
+  0000000000000027: E8 00 00 00 00     call        __acrt_iob_func
+  000000000000002C: 4C 8B 4C 24 28     mov         r9,qword ptr [rsp+28h]
+  0000000000000031: 45 33 C0           xor         r8d,r8d
+  0000000000000034: 48 8B 54 24 40     mov         rdx,qword ptr [rsp+40h]
+  0000000000000039: 48 8B C8           mov         rcx,rax
+  000000000000003C: E8 00 00 00 00     call        _vfprintf_l
+  0000000000000041: 89 44 24 20        mov         dword ptr [rsp+20h],eax
+  0000000000000045: 48 C7 44 24 28 00  mov         qword ptr [rsp+28h],0
+                    00 00 00
+  000000000000004E: 8B 44 24 20        mov         eax,dword ptr [rsp+20h]
+  0000000000000052: 48 83 C4 38        add         rsp,38h
+  0000000000000056: C3                 ret
+
+scanf:
+  0000000000000000: 48 89 4C 24 08     mov         qword ptr [rsp+8],rcx
+  0000000000000005: 48 89 54 24 10     mov         qword ptr [rsp+10h],rdx
+  000000000000000A: 4C 89 44 24 18     mov         qword ptr [rsp+18h],r8
+  000000000000000F: 4C 89 4C 24 20     mov         qword ptr [rsp+20h],r9
+  0000000000000014: 48 83 EC 38        sub         rsp,38h
+  0000000000000018: 48 8D 44 24 48     lea         rax,[rsp+48h]
+  000000000000001D: 48 89 44 24 28     mov         qword ptr [rsp+28h],rax
+  0000000000000022: 33 C9              xor         ecx,ecx
+  0000000000000024: E8 00 00 00 00     call        __acrt_iob_func
+  0000000000000029: 4C 8B 4C 24 28     mov         r9,qword ptr [rsp+28h]
+  000000000000002E: 45 33 C0           xor         r8d,r8d
+  0000000000000031: 48 8B 54 24 40     mov         rdx,qword ptr [rsp+40h]
+  0000000000000036: 48 8B C8           mov         rcx,rax
+  0000000000000039: E8 00 00 00 00     call        _vfscanf_l
+  000000000000003E: 89 44 24 20        mov         dword ptr [rsp+20h],eax
+  0000000000000042: 48 C7 44 24 28 00  mov         qword ptr [rsp+28h],0
+                    00 00 00
+  000000000000004B: 8B 44 24 20        mov         eax,dword ptr [rsp+20h]
+  000000000000004F: 48 83 C4 38        add         rsp,38h
+  0000000000000053: C3                 ret
+
+  Summary
+
+         525 .bss
+          B0 .chks64
+          60 .data
+          90 .debug$S
+          2F .drectve
+          54 .pdata
+         450 .text$mn
+          38 .xdata

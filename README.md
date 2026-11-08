@@ -8,6 +8,7 @@
 - 第三次作业：`assignment3_sum/`
 - 第四次作业（九九乘法表输出）：`assignment4_multiplication/`
 - 第四次作业（九九乘法表纠错）：`assignment4_table_check/`
+- 第五次作业（递归调用）：`assignment5_fibonacci/`
 
 ## 第三次作业
 
@@ -37,3 +38,15 @@
 - [assignment4_table_check/README.md](assignment4_table_check/README.md)
 - [assignment4_table_check/verification.txt](assignment4_table_check/verification.txt)
 - [assignment4_table_check/docs/dosbox_demo.png](assignment4_table_check/docs/dosbox_demo.png)
+
+## 第五次作业
+
+### 递归调用（斐波那契数列）
+
+键盘输入 n（0~100），用递归求第 n 个斐波那契数；结果用记忆化 + 万进制存储，
+并分析每层递归占用的栈空间（16 字节/层），用调试版打印每次调用/返回时的 SP。
+
+- [assignment5_fibonacci/README.md](assignment5_fibonacci/README.md)
+- [assignment5_fibonacci/verification.txt](assignment5_fibonacci/verification.txt)
+- [assignment5_fibonacci/docs/dosbox_demo.png](assignment5_fibonacci/docs/dosbox_demo.png)
+
