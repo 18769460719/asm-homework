@@ -1,0 +1,82 @@
+作业 6 验证记录
+================
+
+环境：DOSBox 0.74 + MASM 5.0 + LINK 3.60；C 部分用 MSVC 19.12（cl /Od /MT）。
+
+一、日历正确性
+--------------
+输入用重定向文件（年份一行、月份一行），程序输出与 Python
+标准库 calendar 生成的期望文本逐行比较，9 组全部一致：
+
+  序号  年份-月份    说明                    结果
+  1     1900-01     世纪起点、非闰年（1900）  OK
+  2     1900-02     1900 不是闰年            OK
+  3     2000-02     2000 是闰年（能被 400）  OK
+  4     2024-02     普通闰年                 OK
+  5     2026-11     题目示例                 OK
+  6     2099-12     年份上界                 OK
+  7     1999-12     普通年份、跨年           OK
+  8     2001-01     普通年份                 OK
+  9     2023-03     31 天的月份              OK
+
+比较脚本的做法：去掉两行输入提示后，逐行对比表头与 7 列日期，
+空格数量也一致（每格 3 列右对齐）。
+
+说明：1900-03 之前的日期直接用“从 1900-01-01 开始累加”也成立，
+因为 1900-01-01 是星期一；本程序的算法对 1900-01-01 取模得 1（周一）。
+
+二、跳转范围实验
+----------------
+1) jump_bad.asm：条件转移后面塞 200 个 NOP，短跳转够不到：
+
+     jump_bad.asm(7): error A2053: Jump out of range by 73 byte(s)
+     51738 + 464808 Bytes symbol space free
+       0 Warning Errors
+       1 Severe  Errors
+
+2) jump_fix.asm：条件取反 + 近跳转
+
+       jne  short skip
+       jmp  near ptr target
+     skip:
+
+   汇编通过（0 Warning / 0 Severe），用 /Fl 生成清单后可以看到机器码：
+
+      75 03        JNE  +3        ; 短跳转，位移 1 字节
+      E9 00D1 R    JMP  +00D1h    ; 近跳转，位移是 16 位带符号数
+      EB xx        JMP  short     ; 短跳转，位移 1 字节
+
+   结论：条件转移（Jcc）只有 8 位位移，范围 -128~+127；
+   超出时 MASM 直接报 A2053，需要改成“条件取反 + JMP near”。
+   无条件 JMP 有 short/near 两种编码，汇编器会自动选短的。
+
+三、两个代码段与段间调用
+------------------------
+程序分 DATA / STACK / CSEG1 / CSEG2 四个段：
+  - CSEG1：主流程、read_year、read_month、compute、is_leap；
+  - CSEG2：putc、print_dec_far、print_year、print_title_far、
+           print_head_far、print_body_far。
+CSEG1 用 `call far ptr print_title_far` 调用 CSEG2，被调过程用
+`ret 4` / `ret 6` 连参数一起弹出，CS:IP 由 far call 自动压栈。
+
+四、C 版本
+----------
+cal_c.c 用同样的算法：is_leap / days_of / first_weekday / print_cal。
+编译命令：
+
+    cl /nologo /Od /MT /FA /Fe:bin\cal_c.exe cal_c.c
+
+编译成功，并生成汇编清单 cal_c.asm；`dumpbin /disasm cal_c.obj`
+的输出在 cal_c_obj_disasm.txt，逐段注释见 cal_c_disasm_notes.txt。
+
+注意：本机开启了“智能应用控制（Smart App Control）”，
+新编译出的 cal_c.exe / cal_c.dll 被策略拦截（WinError 4551：
+应用控制策略阻止了此文件），因此本机没能直接运行 C 版；
+同一算法的汇编版输出已用 Python 逐行核对（见第一节）。
+换一台没开 SAC 的机器直接 `cl` 编译运行即可，源码里没有平台相关调用。
+
+五、截图
+--------
+docs/calendar-run.png      MASM 汇编、LINK 链接、运行 2026-11 的输出
+docs/jump-range-error.png  A2053 跳转超范围报错
+docs/jump-range-fix.png    改成 near 跳转后 0 Warning / 0 Severe

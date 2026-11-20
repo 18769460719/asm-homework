@@ -1,4 +1,4 @@
-# 汇编语言课程作业
+﻿# 汇编语言课程作业
 
 本仓库保存汇编语言课程各次作业的源码、说明和验证结果。
 
@@ -9,6 +9,7 @@
 - 第四次作业（九九乘法表输出）：`assignment4_multiplication/`
 - 第四次作业（九九乘法表纠错）：`assignment4_table_check/`
 - 第五次作业（递归调用）：`assignment5_fibonacci/`
+- 第六次作业（输出日历）：`assignment6_calendar/`
 
 ## 第三次作业
 
@@ -49,4 +50,16 @@
 - [assignment5_fibonacci/README.md](assignment5_fibonacci/README.md)
 - [assignment5_fibonacci/verification.txt](assignment5_fibonacci/verification.txt)
 - [assignment5_fibonacci/docs/dosbox_demo.png](assignment5_fibonacci/docs/dosbox_demo.png)
+
+## 第六次作业
+
+### 输出日历
+
+输入年份（1900~2099）和月份，输出该月日历；两个代码段、段间 far call、
+寄存器/数据段/堆栈三种传参方式对照，并演示条件跳转超出 -128~+127 时的处理。
+
+- [assignment6_calendar/README.md](assignment6_calendar/README.md)
+- [assignment6_calendar/verification.txt](assignment6_calendar/verification.txt)
+- [assignment6_calendar/docs/calendar-run.png](assignment6_calendar/docs/calendar-run.png)
+
 

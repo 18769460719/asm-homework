@@ -1,0 +1,111 @@
+cal_c.obj 反汇编阅读笔记
+========================
+
+编译命令：cl /nologo /Od /MT /FA cal_c.c
+反汇编：  dumpbin /nologo /disasm cal_c.obj > cal_c_obj_disasm.txt
+优化关掉了（/Od），所以语句和指令基本一一对应，适合对照源码看。
+
+下面按函数摘录关键指令，地址是 .obj 里的相对偏移。
+
+--------------------------------------------------------------------
+一、is_leap：取模运算的固定套路
+--------------------------------------------------------------------
+  0000: 89 4C 24 08        mov  dword ptr [rsp+8],ecx   ; 保存参数（home space）
+  0004: 48 83 EC 18        sub  rsp,18h                 ; 开局部栈帧 24 字节
+  0008: 8B 44 24 20        mov  eax,dword ptr [rsp+20h] ; 取 y（参数在 home space）
+  000C: 99                 cdq                          ; 符号扩展，为 idiv 准备 edx:eax
+  000D: B9 90 01 00 00     mov  ecx,190h                ; 190h = 400
+  0012: F7 F9              idiv eax,ecx                 ; eax = y/400, edx = y%400
+  0014: 8B C2              mov  eax,edx
+  0016: 85 C0              test eax,eax
+  0018: 75 07              jne  0021h                   ; 余数非 0 → 接着判断 100
+  001A: B8 01 00 00 00     mov  eax,1                   ; 能被 400 整除 → 闰年
+  001F: EB 3C              jmp  005Dh
+
+  0021: ...              （同样用 64h=100 做 idiv，余数为 0 则返回 0）
+
+  0037: 8B 44 24 20        mov  eax,dword ptr [rsp+20h]
+  003B: 99                 cdq
+  003C: 83 E2 03           and  edx,3                   ; 取 y 的低 2 位
+  003F: 03 C2              add  eax,edx
+  0041: 83 E0 03           and  eax,3
+  0044: 2B C2              sub  eax,edx                 ; 等价于 y % 4
+  0046: 85 C0              test eax,eax
+  0048: 75 09              jne  0053h                   ; 余数非 0 → 返回 0
+
+编译器把 y%4 优化成了位运算（and 3），因为 4 是 2 的幂。
+注意 C 里写的是 y%4==0，汇编里看到的是“先算余数再判 0”，不是直接测试某一位。
+
+对比 8086 版：16 位 div 一次只能除 16 位，且没有 idiv 之外的捷径；
+本程序里 400/100/4 都是立即数，8086 版只能 mov bx,400 再 div bx，商在 ax、余数在 dx。
+
+--------------------------------------------------------------------
+二、days_of：查表 + 二月特判
+--------------------------------------------------------------------
+  0039: ...  mov eax,dword ptr [rsp+20h]   ; m
+  003D: ...  cmp eax,2
+  ...        jne 查表
+  ...        call is_leap
+  查表：     mov eax,dword ptr mon_days[eax*4-4]  ; 数组下标减 1
+
+对应源码：
+    if (m == 2 && is_leap(y)) return 29;
+    return mon_days[m - 1];
+
+--------------------------------------------------------------------
+三、first_weekday：两个累加循环
+--------------------------------------------------------------------
+  00C0: 89 54 24 10        mov  dword ptr [rsp+10h],edx  ; 保存 m
+  00C4: 89 4C 24 08        mov  dword ptr [rsp+8],ecx   ; 保存 y
+  00C8: 48 83 EC 38        sub  rsp,38h                 ; 56 字节局部区
+  00CC: C7 44 24 24 00 00  mov  dword ptr [rsp+24h],0   ; days = 0
+  00D4: C7 44 24 20 6C 07  mov  dword ptr [rsp+20h],76Ch ; i = 1900
+  00DC: EB 0A              jmp  00E8h
+  00DE: 8B 44 24 20        mov  eax,dword ptr [rsp+20h]
+  00E2: FF C0              inc  eax
+  00E4: 89 44 24 20        mov  dword ptr [rsp+20h],eax  ; i++
+  00E8: 8B 44 24 40        mov  eax,dword ptr [rsp+40h]  ; y
+  00EC: 39 44 24 20        cmp  dword ptr [rsp+20h],eax
+  00F0: 7D 1A              jge  010Ch                   ; i >= y 结束
+  00F2: 8B 4C 24 20        mov  ecx,dword ptr [rsp+20h]
+  00F6: E8 00 00 00 00     call is_leap                  ; 返回值在 eax
+  00FB: 8B 4C 24 24        mov  ecx,dword ptr [rsp+24h]
+  00FF: 8D 84 01 6D 01 00  lea  eax,[rcx+rax+16Dh]      ; days + leap + 365
+  0106: 89 44 24 24        mov  dword ptr [rsp+24h],eax
+  010A: EB D2              jmp  00DEh
+
+16Dh = 365，编译器把“365 + is_leap(i)”合成一条 lea。
+第二个循环同理（i 从 1 到 month-1，用 days_of 查表），
+最后 `(days + 1) % 7` 用 idiv 7 取余，余数就是星期几（0=周日）。
+
+对比 8086 版：这里的 days 是 32 位（约 7 万），8086 的 16 位寄存器存不下，
+所以汇编版改成“边加边对 7 取余”，每一步只保留 0~6，避免溢出；
+C 版能直接累加大数，是因为 int 是 32 位。
+
+--------------------------------------------------------------------
+四、main：输入、表头、按 7 列输出
+--------------------------------------------------------------------
+  main 里先 call scanf 读 year/month（参数是 &year、&month 的地址），
+  再 call print_cal。print_cal 中：
+
+  - printf("%d  %s\n", year, mon_name[month-1])：两次 mov 压参数，
+    取 mon_name 时 `mov rax,[mon_name+...]` 再取指针。
+  - 打印日历时 col 用寄存器保存，每输出一个数 inc，
+    到 7 就输出换行并清零；循环边界用 cmp/jl 实现。
+  - 最后 `if (col != 0) printf("\n")`。
+
+对比汇编版：汇编里 print_body_far 同样维护 col，
+但每格要手动把数字转成 3 个字符（除以 100/10/1 再逐位输出），
+C 版一句 printf("%3d") 就由运行库完成补空格。
+
+--------------------------------------------------------------------
+五、和 8086 汇编版的整体差别
+--------------------------------------------------------------------
+1) 参数传递：C 版（x64）前 4 个整型参数走 ecx/edx/r8d/r9d，
+   多余的走栈；汇编版为了练习，分别用了寄存器、数据段、堆栈三种方式。
+2) 调用：C 版 call 是段内近调用（同一代码段），
+   汇编版 print_*_far 用 call far ptr，CS:IP 一起压栈，retf 返回。
+3) 取模：C 版 idiv 一条指令；汇编版 16 位 div 要先把 dx 清 0，
+   且被除数不能超过 65535，所以改成“每步取余”。
+4) 输出：C 版靠 printf；汇编版直接 int 21h 的 09h/02h，
+   数字要自己转字符。

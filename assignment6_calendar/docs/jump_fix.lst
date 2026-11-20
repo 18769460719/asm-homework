@@ -1,0 +1,65 @@
+Microsoft (R) Macro Assembler Version 5.00                  11/20/26 10:13:03
+                                                             Page     1-1
+
+
+				; jump_fix.asm -- fix: invert the condition and
+				 use a near jump (rel16) 
+ 0000				stack segment stack stack 
+ 0000  0100[			    db 256 dup(0) 
+	   00			
+			 ]	
+				
+ 0100				stack ends 
+				 
+ 0000				code segment 
+				    assume cs:code, ss:stack 
+ 0000				start: 
+ 0000  B8 0001			    mov ax, 1 
+ 0003  3D 0000			    cmp ax, 0 
+ 0006  75 03			    jne short skip          ; inverted conditio
+				n, only skips 3 bytes 
+ 0008  E9 00D1 R		    jmp near ptr target     ; near jump uses a 
+				16-bit displacement (+/-32K) 
+ 000B				skip: 
+ 000B  90			    nop 
+ 000C  00C5[			    db 197 dup(90h)         ; filler, target st
+				ill ~200 bytes away 
+	   90			
+			 ]	
+				
+ 00D1				target: 
+ 00D1  B8 4C00			    mov ax, 4C00h 
+ 00D4  CD 21			    int 21h 
+ 00D6				code ends 
+				end start 
+Microsoft (R) Macro Assembler Version 5.00                  11/20/26 10:13:03
+                                                             Symbols-1
+
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+CODE . . . . . . . . . . . . . .  	00D6	PARA	NONE	
+STACK  . . . . . . . . . . . . .  	0100	PARA	STACK	
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+SKIP . . . . . . . . . . . . . .  	L NEAR	000B	CODE
+START  . . . . . . . . . . . . .  	L NEAR	0000	CODE
+
+TARGET . . . . . . . . . . . . .  	L NEAR	00D1	CODE
+
+@FILENAME  . . . . . . . . . . .  	TEXT  jump_fix		
+
+
+     20 Source  Lines
+     20 Total   Lines
+      7 Symbols
+
+  51142 + 465402 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors
