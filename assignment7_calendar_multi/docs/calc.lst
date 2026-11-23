@@ -1,0 +1,255 @@
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Page     1-1
+
+
+				; calc.asm —— 作业7：日期计算模块 
+				; compute：算当月 1 号是星期几（0=周
+				日）和当月天数，结果写回数据段�
+				� 
+				; 内部把 1900 到 year-1 的天数“边加�
+				�� mod 7”，避免 16 位累加溢出。 
+				 
+				        include macros.inc 
+			     C	; macros.inc —— 作业7 公共宏定义 
+			     C	; 宏汇编：把常用的一段指令序列起
+				个名字，展开时直接替换成指令， 
+			     C	; 不产生 call/ret 的开销，也不占额�
+				�的代码段。 
+			     C	 
+			     C	; 保存/恢复常用寄存器（打印类过�
+				�里反复用到） 
+			     C	PUSHALL macro 
+			     C	    push ax 
+			     C	    push bx 
+			     C	    push cx 
+			     C	    push dx 
+			     C	    push si 
+			     C	    push di 
+			     C	endm 
+			     C	 
+			     C	POPALL macro 
+			     C	    pop di 
+			     C	    pop si 
+			     C	    pop dx 
+			     C	    pop cx 
+			     C	    pop bx 
+			     C	    pop ax 
+			     C	endm 
+			     C	 
+			     C	; 打印以 '$' 结尾的字符串 
+			     C	PRINTSTR macro msg 
+			     C	    mov dx, offset msg 
+			     C	    mov ah, 09h 
+			     C	    int 21h 
+			     C	endm 
+			     C	 
+			     C	; 换行 
+			     C	NEWLINE macro 
+			     C	    PRINTSTR crlf 
+			     C	endm 
+				 
+				 
+				        extrn year:word, month:word, first:word
+				, ndays:word 
+				        extrn mdays:byte 
+				 
+ 0000				CALC    segment para public 'CODE' 
+				        assume cs:CALC 
+				 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Page     1-2
+
+
+				; ---------------- 对外接口 ---------------
+				- 
+				        public compute 
+ 0000				compute proc far 
+ 0000  33 D2			        xor dx, dx                  ; dx = 天�
+				�� mod 7 
+				 
+ 0002  BB 076C			        mov bx, 1900 
+ 0005				cy_loop: 
+ 0005  3B 1E 0000 E		        cmp bx, year 
+ 0009  73 16			        jae cy_done 
+ 000B  42			        inc dx                      ; 平年 36
+				5 mod 7 = 1 
+ 000C  8B C3			        mov ax, bx 
+ 000E  E8 0082 R		        call is_leap 
+ 0011  3C 00			        cmp al, 0 
+ 0013  74 01			        je cy_next 
+ 0015  42			        inc dx                      ; 闰年 36
+				6 mod 7 = 2 
+ 0016				cy_next: 
+ 0016  83 FA 07			        cmp dx, 7 
+ 0019  72 03			        jb cy_ok 
+ 001B  83 EA 07			        sub dx, 7 
+ 001E				cy_ok: 
+ 001E  43			        inc bx 
+ 001F  EB E4			        jmp cy_loop 
+				 
+ 0021				cy_done: 
+ 0021  BE 0000			        mov si, 0 
+ 0024  8B 0E 0000 E		        mov cx, month 
+ 0028  49			        dec cx 
+ 0029  BB 0007			        mov bx, 7 
+ 002C				cm_loop: 
+ 002C  3B F1			        cmp si, cx 
+ 002E  73 11			        jae cm_done 
+ 0030  8A 84 0000 E		        mov al, mdays[si] 
+ 0034  32 E4			        xor ah, ah 
+ 0036  03 D0			        add dx, ax 
+ 0038  8B C2			        mov ax, dx 
+ 003A  33 D2			        xor dx, dx 
+ 003C  F7 F3			        div bx 
+ 003E  46			        inc si 
+ 003F  EB EB			        jmp cm_loop 
+				 
+ 0041				cm_done: 
+ 0041  83 3E 0000 E 02		        cmp word ptr month, 2 
+ 0046  76 0B			        jbe cm_noleap 
+ 0048  A1 0000 E		        mov ax, year 
+ 004B  E8 0082 R		        call is_leap 
+ 004E  3C 00			        cmp al, 0 
+ 0050  74 01			        je cm_noleap 
+ 0052  42			        inc dx 
+ 0053				cm_noleap: 
+ 0053  42			        inc dx                      ; 加上 1 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Page     1-3
+
+
+				号当天 
+ 0054  8B C2			        mov ax, dx 
+ 0056  33 D2			        xor dx, dx 
+ 0058  F7 F3			        div bx 
+ 005A  89 16 0000 E		        mov first, dx 
+				 
+ 005E  8B 36 0000 E		        mov si, month 
+ 0062  4E			        dec si 
+ 0063  8A 84 0000 E		        mov al, mdays[si] 
+ 0067  32 E4			        xor ah, ah 
+ 0069  A3 0000 E		        mov ndays, ax 
+ 006C  83 3E 0000 E 02		        cmp word ptr month, 2 
+ 0071  75 0E			        jne cd_done 
+ 0073  A1 0000 E		        mov ax, year 
+ 0076  E8 0082 R		        call is_leap 
+ 0079  3C 00			        cmp al, 0 
+ 007B  74 04			        je cd_done 
+ 007D  FF 06 0000 E		        inc ndays 
+ 0081				cd_done: 
+ 0081  CB			        ret 
+ 0082				compute endp 
+				 
+				; ---------------- 内部过程：闰年判断 
+				---------------- 
+				; 入口 AX=年份，出口 AL=1 闰年 / 0 平
+				年 
+ 0082				is_leap proc near 
+ 0082  53			        push bx 
+ 0083  51			        push cx 
+ 0084  52			        push dx 
+ 0085  8B C8			        mov cx, ax 
+				 
+ 0087  8B C1			        mov ax, cx 
+ 0089  33 D2			        xor dx, dx 
+ 008B  BB 0190			        mov bx, 400 
+ 008E  F7 F3			        div bx 
+ 0090  83 FA 00			        cmp dx, 0 
+ 0093  74 21			        je lp_yes 
+				 
+ 0095  8B C1			        mov ax, cx 
+ 0097  33 D2			        xor dx, dx 
+ 0099  BB 0064			        mov bx, 100 
+ 009C  F7 F3			        div bx 
+ 009E  83 FA 00			        cmp dx, 0 
+ 00A1  74 0E			        je lp_no 
+				 
+ 00A3  8B C1			        mov ax, cx 
+ 00A5  33 D2			        xor dx, dx 
+ 00A7  BB 0004			        mov bx, 4 
+ 00AA  F7 F3			        div bx 
+ 00AC  83 FA 00			        cmp dx, 0 
+ 00AF  74 05			        je lp_yes 
+				 
+ 00B1				lp_no: 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Page     1-4
+
+
+ 00B1  32 C0			        xor al, al 
+ 00B3  EB 03 90			        jmp lp_end 
+ 00B6				lp_yes: 
+ 00B6  B0 01			        mov al, 1 
+ 00B8				lp_end: 
+ 00B8  5A			        pop dx 
+ 00B9  59			        pop cx 
+ 00BA  5B			        pop bx 
+ 00BB  C3			        ret 
+ 00BC				is_leap endp 
+				 
+ 00BC				CALC    ends 
+				        end 
+
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Symbols-1
+
+
+Macros:
+
+		N a m e			Lines
+
+NEWLINE  . . . . . . . . . . . .  	   1
+POPALL . . . . . . . . . . . . .  	   6
+PRINTSTR . . . . . . . . . . . .  	   3
+PUSHALL  . . . . . . . . . . . .  	   6
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+CALC . . . . . . . . . . . . . .  	00BC	PARA	PUBLIC	'CODE'
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+CD_DONE  . . . . . . . . . . . .  	L NEAR	0081	CALC
+CM_DONE  . . . . . . . . . . . .  	L NEAR	0041	CALC
+CM_LOOP  . . . . . . . . . . . .  	L NEAR	002C	CALC
+CM_NOLEAP  . . . . . . . . . . .  	L NEAR	0053	CALC
+COMPUTE  . . . . . . . . . . . .  	F PROC	0000	CALC	Global	Length = 0082
+CY_DONE  . . . . . . . . . . . .  	L NEAR	0021	CALC
+CY_LOOP  . . . . . . . . . . . .  	L NEAR	0005	CALC
+CY_NEXT  . . . . . . . . . . . .  	L NEAR	0016	CALC
+CY_OK  . . . . . . . . . . . . .  	L NEAR	001E	CALC
+
+FIRST  . . . . . . . . . . . . .  	V WORD	0000		External
+
+IS_LEAP  . . . . . . . . . . . .  	N PROC	0082	CALC	Length = 003A
+
+LP_END . . . . . . . . . . . . .  	L NEAR	00B8	CALC
+LP_NO  . . . . . . . . . . . . .  	L NEAR	00B1	CALC
+LP_YES . . . . . . . . . . . . .  	L NEAR	00B6	CALC
+
+MDAYS  . . . . . . . . . . . . .  	V BYTE	0000		External
+MONTH  . . . . . . . . . . . . .  	V WORD	0000		External
+
+NDAYS  . . . . . . . . . . . . .  	V WORD	0000		External
+
+YEAR . . . . . . . . . . . . . .  	V WORD	0000		External
+
+@FILENAME  . . . . . . . . . . .  	TEXT  calc		
+
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Symbols-2
+
+
+
+    160 Source  Lines
+    161 Total   Lines
+     26 Symbols
+
+  51100 + 449060 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors

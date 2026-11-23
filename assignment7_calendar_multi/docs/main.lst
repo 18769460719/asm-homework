@@ -1,0 +1,254 @@
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:04
+                                                             Page     1-1
+
+
+				; main.asm —— 作业7：多模块输出日�
+				��（主模块） 
+				; 本模块只做三件事：建立数据段/�
+				�栈、按顺序调用各功能模块、退出�
+				�� 
+				; 其它模块：input.asm（输入）、calc.a
+				sm（日期计算）、print.asm（输出）。
+				 
+				; 汇编：MASM 5.0  链接：LINK 3.60  运行
+				：DOSBox 
+				 
+				        include macros.inc 
+			     C	; macros.inc —— 作业7 公共宏定义 
+			     C	; 宏汇编：把常用的一段指令序列起
+				个名字，展开时直接替换成指令， 
+			     C	; 不产生 call/ret 的开销，也不占额�
+				�的代码段。 
+			     C	 
+			     C	; 保存/恢复常用寄存器（打印类过�
+				�里反复用到） 
+			     C	PUSHALL macro 
+			     C	    push ax 
+			     C	    push bx 
+			     C	    push cx 
+			     C	    push dx 
+			     C	    push si 
+			     C	    push di 
+			     C	endm 
+			     C	 
+			     C	POPALL macro 
+			     C	    pop di 
+			     C	    pop si 
+			     C	    pop dx 
+			     C	    pop cx 
+			     C	    pop bx 
+			     C	    pop ax 
+			     C	endm 
+			     C	 
+			     C	; 打印以 '$' 结尾的字符串 
+			     C	PRINTSTR macro msg 
+			     C	    mov dx, offset msg 
+			     C	    mov ah, 09h 
+			     C	    int 21h 
+			     C	endm 
+			     C	 
+			     C	; 换行 
+			     C	NEWLINE macro 
+			     C	    PRINTSTR crlf 
+			     C	endm 
+				 
+				 
+				; ---------------- 公共数据段（各模块�
+				��过 EXTRN 访问） ---------------- 
+ 0000				DATA    segment para public 'DATA' 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:04
+                                                             Page     1-2
+
+
+				        public year, month, first, ndays, mname
+				s, mdays 
+				        public p_year, p_mon, badmsg, crlf, whe
+				ad 
+				 
+ 0000  0000			year    dw 0 
+ 0002  0000			month   dw 0 
+ 0004  0000			first   dw 0                    ; 当月 1 号�
+				��星期几，0=周日 
+ 0006  0000			ndays   dw 0                    ; 当月天数 
+				 
+				; 12 个月名，每个固定 9 字节，用 (�
+				��份-1)*9 算偏移 
+ 0008  4A 61 6E 75 61 72 79	mnames  db 'January  ' 
+       20 20			
+ 0011  46 65 62 72 75 61 72	        db 'February ' 
+       79 20			
+ 001A  4D 61 72 63 68 20 20	        db 'March    ' 
+       20 20			
+ 0023  41 70 72 69 6C 20 20	        db 'April    ' 
+       20 20			
+ 002C  4D 61 79 20 20 20 20	        db 'May      ' 
+       20 20			
+ 0035  4A 75 6E 65 20 20 20	        db 'June     ' 
+       20 20			
+ 003E  4A 75 6C 79 20 20 20	        db 'July     ' 
+       20 20			
+ 0047  41 75 67 75 73 74 20	        db 'August   ' 
+       20 20			
+ 0050  53 65 70 74 65 6D 62	        db 'September' 
+       65 72			
+ 0059  4F 63 74 6F 62 65 72	        db 'October  ' 
+       20 20			
+ 0062  4E 6F 76 65 6D 62 65	        db 'November ' 
+       72 20			
+ 006B  44 65 63 65 6D 62 65	        db 'December ' 
+       72 20			
+				 
+ 0074  1F 1C 1F 1E 1F 1E 1F	mdays   db 31,28,31,30,31,30,31,31,30,31,30,31 
+       1F 1E 1F 1E 1F		
+				 
+ 0080  50 6C 65 61 73 65 20	p_year  db 'Please input year (1900-2099): $' 
+       69 6E 70 75 74 20 79	
+       65 61 72 20 28 31 39	
+       30 30 2D 32 30 39 39	
+       29 3A 20 24		
+ 00A0  50 6C 65 61 73 65 20	p_mon   db 'Please input month (1-12): $' 
+       69 6E 70 75 74 20 6D	
+       6F 6E 74 68 20 28 31	
+       2D 31 32 29 3A 20 24	
+ 00BC  0D 0A 49 6E 76 61 6C	badmsg  db 0Dh,0Ah,'Invalid input, try again.',
+				0Dh,0Ah,'$' 
+       69 64 20 69 6E 70 75	
+       74 2C 20 74 72 79 20	
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:04
+                                                             Page     1-3
+
+
+       61 67 61 69 6E 2E 0D	
+       0A 24			
+ 00DA  0D 0A 24			crlf    db 0Dh,0Ah,'$' 
+ 00DD  53 75 20 4D 6F 20 54	whead   db 'Su Mo Tu We Th Fr Sa$' 
+       75 20 57 65 20 54 68	
+       20 46 72 20 53 61 24	
+ 00F2				DATA    ends 
+				 
+				; ---------------- 堆栈段 ---------------- 
+ 0000				STACK   segment para stack 'STACK' 
+ 0000  0800[			        db 2048 dup(0) 
+	   00			
+			 ]	
+				
+ 0800				STACK   ends 
+				 
+				; ---------------- 其它模块提供的过程 
+				---------------- 
+				        extrn read_year:far, read_month:far, co
+				mpute:far 
+				        extrn print_title:far, print_head:far, 
+				print_body:far 
+				 
+				; ---------------- 主代码段 ---------------
+				- 
+ 0000				MAIN    segment para public 'CODE' 
+				        assume cs:MAIN, ds:DATA, ss:STACK 
+				 
+ 0000				start: 
+ 0000  B8 ---- R		        mov ax, DATA 
+ 0003  8E D8			        mov ds, ax 
+ 0005  B8 ---- R		        mov ax, STACK 
+ 0008  8E D0			        mov ss, ax 
+ 000A  BC 0800			        mov sp, 2048 
+				 
+ 000D  9A 0000 ---- E		        call far ptr read_year          ; 输�
+				�年份，结果写 year 
+ 0012  9A 0000 ---- E		        call far ptr read_month         ; 输�
+				�月份，结果写 month 
+ 0017  9A 0000 ---- E		        call far ptr compute            ; 算 f
+				irst / ndays 
+				 
+ 001C  FF 36 0002 R		        push month                      ; 堆�
+				�传参：先压后一个参数 
+ 0020  FF 36 0000 R		        push year 
+ 0024  9A 0000 ---- E		        call far ptr print_title        ; print
+				_title 用 ret 4 清栈 
+				 
+ 0029  9A 0000 ---- E		        call far ptr print_head         ; 星�
+				�表头 
+				 
+ 002E  FF 36 0006 R		        push ndays 
+ 0032  FF 36 0004 R		        push first 
+ 0036  9A 0000 ---- E		        call far ptr print_body         ; 日�
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:04
+                                                             Page     1-4
+
+
+				�主体，ret 4 清栈 
+				 
+ 003B  B8 4C00			        mov ax, 4C00h 
+ 003E  CD 21			        int 21h 
+				 
+ 0040				MAIN    ends 
+				        end start 
+
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:04
+                                                             Symbols-1
+
+
+Macros:
+
+		N a m e			Lines
+
+NEWLINE  . . . . . . . . . . . .  	   1
+POPALL . . . . . . . . . . . . .  	   6
+PRINTSTR . . . . . . . . . . . .  	   3
+PUSHALL  . . . . . . . . . . . .  	   6
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+DATA . . . . . . . . . . . . . .  	00F2	PARA	PUBLIC	'DATA'
+MAIN . . . . . . . . . . . . . .  	0040	PARA	PUBLIC	'CODE'
+STACK  . . . . . . . . . . . . .  	0800	PARA	STACK	'STACK'
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+BADMSG . . . . . . . . . . . . .  	L BYTE	00BC	DATA	Global
+
+COMPUTE  . . . . . . . . . . . .  	L FAR 	0000		External
+CRLF . . . . . . . . . . . . . .  	L BYTE	00DA	DATA	Global
+
+FIRST  . . . . . . . . . . . . .  	L WORD	0004	DATA	Global
+
+MDAYS  . . . . . . . . . . . . .  	L BYTE	0074	DATA	Global
+MNAMES . . . . . . . . . . . . .  	L BYTE	0008	DATA	Global
+MONTH  . . . . . . . . . . . . .  	L WORD	0002	DATA	Global
+
+NDAYS  . . . . . . . . . . . . .  	L WORD	0006	DATA	Global
+
+PRINT_BODY . . . . . . . . . . .  	L FAR 	0000		External
+PRINT_HEAD . . . . . . . . . . .  	L FAR 	0000		External
+PRINT_TITLE  . . . . . . . . . .  	L FAR 	0000		External
+P_MON  . . . . . . . . . . . . .  	L BYTE	00A0	DATA	Global
+P_YEAR . . . . . . . . . . . . .  	L BYTE	0080	DATA	Global
+
+READ_MONTH . . . . . . . . . . .  	L FAR 	0000		External
+READ_YEAR  . . . . . . . . . . .  	L FAR 	0000		External
+
+START  . . . . . . . . . . . . .  	L NEAR	0000	MAIN
+
+WHEAD  . . . . . . . . . . . . .  	L BYTE	00DD	DATA	Global
+
+YEAR . . . . . . . . . . . . . .  	L WORD	0000	DATA	Global
+
+@FILENAME  . . . . . . . . . . .  	TEXT  main		
+
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:04
+                                                             Symbols-2
+
+
+
+    113 Source  Lines
+    114 Total   Lines
+     28 Symbols
+
+  51170 + 448990 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors

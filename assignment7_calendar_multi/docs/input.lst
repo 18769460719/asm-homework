@@ -1,0 +1,271 @@
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Page     1-1
+
+
+				; input.asm —— 作业7：输入模块 
+				; 提供两个远过程：read_year / read_mont
+				h 
+				; 两者都从键盘逐字符读，数字回显
+				，回车结束；非法输入会提示重来�
+				� 
+				; DS 由 main 设好，本模块只按 EXTRN �
+				�偏移访问数据段。 
+				 
+				        include macros.inc 
+			     C	; macros.inc —— 作业7 公共宏定义 
+			     C	; 宏汇编：把常用的一段指令序列起
+				个名字，展开时直接替换成指令， 
+			     C	; 不产生 call/ret 的开销，也不占额�
+				�的代码段。 
+			     C	 
+			     C	; 保存/恢复常用寄存器（打印类过�
+				�里反复用到） 
+			     C	PUSHALL macro 
+			     C	    push ax 
+			     C	    push bx 
+			     C	    push cx 
+			     C	    push dx 
+			     C	    push si 
+			     C	    push di 
+			     C	endm 
+			     C	 
+			     C	POPALL macro 
+			     C	    pop di 
+			     C	    pop si 
+			     C	    pop dx 
+			     C	    pop cx 
+			     C	    pop bx 
+			     C	    pop ax 
+			     C	endm 
+			     C	 
+			     C	; 打印以 '$' 结尾的字符串 
+			     C	PRINTSTR macro msg 
+			     C	    mov dx, offset msg 
+			     C	    mov ah, 09h 
+			     C	    int 21h 
+			     C	endm 
+			     C	 
+			     C	; 换行 
+			     C	NEWLINE macro 
+			     C	    PRINTSTR crlf 
+			     C	endm 
+				 
+				 
+				        extrn year:word, month:word 
+				        extrn p_year:byte, p_mon:byte, badmsg:b
+				yte, crlf:byte 
+				 
+ 0000				INPUT   segment para public 'CODE' 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Page     1-2
+
+
+				        assume cs:INPUT 
+				 
+				; ---------------- 读年份（1900-2099） ---
+				------------- 
+				        public read_year 
+ 0000				read_year proc far 
+ 0000				ry_again: 
+				        PRINTSTR p_year 
+ 0000  BA 0000 E             1	    mov dx, offset p_year 
+ 0003  B4 09                 1	    mov ah, 09h 
+ 0005  CD 21                 1	    int 21h 
+ 0007  33 F6			        xor si, si                  ; si = 累�
+				��值 
+ 0009  33 ED			        xor bp, bp                  ; bp = 位�
+				�� 
+ 000B				ry_loop: 
+ 000B  B4 08			        mov ah, 08h                 ; 无回显
+				读字符 
+ 000D  CD 21			        int 21h 
+ 000F  3C 0D			        cmp al, 0Dh 
+ 0011  74 2A			        je ry_done 
+ 0013  3C 0A			        cmp al, 0Ah 
+ 0015  74 F4			        je ry_loop 
+ 0017  3C 1A			        cmp al, 1Ah 
+ 0019  74 22			        je ry_done 
+ 001B  3C 30			        cmp al, '0' 
+ 001D  72 EC			        jb ry_loop 
+ 001F  3C 39			        cmp al, '9' 
+ 0021  77 E8			        ja ry_loop 
+				 
+ 0023  8A D0			        mov dl, al                  ; 回显数
+				字 
+ 0025  B4 02			        mov ah, 02h 
+ 0027  CD 21			        int 21h 
+				 
+ 0029  2C 30			        sub al, '0' 
+ 002B  32 E4			        xor ah, ah 
+ 002D  8B C8			        mov cx, ax 
+ 002F  8B C6			        mov ax, si 
+ 0031  BB 000A			        mov bx, 10 
+ 0034  F7 E3			        mul bx 
+ 0036  03 C1			        add ax, cx 
+ 0038  8B F0			        mov si, ax 
+ 003A  45			        inc bp 
+ 003B  EB CE			        jmp ry_loop 
+				 
+ 003D				ry_done: 
+ 003D  83 FD 00			        cmp bp, 0 
+ 0040  74 BE			        je ry_again 
+ 0042  83 FD 04			        cmp bp, 4 
+ 0045  75 18			        jne ry_bad 
+ 0047  81 FE 076C		        cmp si, 1900 
+ 004B  72 12			        jb ry_bad 
+ 004D  81 FE 0833		        cmp si, 2099 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Page     1-3
+
+
+ 0051  77 0C			        ja ry_bad 
+ 0053  89 36 0000 E		        mov year, si 
+				        NEWLINE 
+ 0057  BA 0000 E             2	    mov dx, offset crlf 
+ 005A  B4 09                 2	    mov ah, 09h 
+ 005C  CD 21                 2	    int 21h 
+ 005E  CB			        ret 
+ 005F				ry_bad: 
+				        PRINTSTR badmsg 
+ 005F  BA 0000 E             1	    mov dx, offset badmsg 
+ 0062  B4 09                 1	    mov ah, 09h 
+ 0064  CD 21                 1	    int 21h 
+ 0066  EB 98			        jmp ry_again 
+ 0068				read_year endp 
+				 
+				; ---------------- 读月份（1-12） --------
+				-------- 
+				        public read_month 
+ 0068				read_month proc far 
+ 0068				rm_again: 
+				        PRINTSTR p_mon 
+ 0068  BA 0000 E             1	    mov dx, offset p_mon 
+ 006B  B4 09                 1	    mov ah, 09h 
+ 006D  CD 21                 1	    int 21h 
+ 006F  33 F6			        xor si, si 
+ 0071  33 ED			        xor bp, bp 
+ 0073				rm_loop: 
+ 0073  B4 08			        mov ah, 08h 
+ 0075  CD 21			        int 21h 
+ 0077  3C 0D			        cmp al, 0Dh 
+ 0079  75 08			        jne rm_notcr 
+ 007B  83 FD 00			        cmp bp, 0 
+ 007E  74 F3			        je rm_loop                  ; 空行（
+				行尾残留的回车）跳过 
+ 0080  EB 30 90			        jmp rm_done 
+ 0083				rm_notcr: 
+ 0083  3C 0A			        cmp al, 0Ah 
+ 0085  74 EC			        je rm_loop 
+ 0087  3C 1A			        cmp al, 1Ah 
+ 0089  74 22			        je rm_eof 
+ 008B  3C 30			        cmp al, '0' 
+ 008D  72 E4			        jb rm_loop 
+ 008F  3C 39			        cmp al, '9' 
+ 0091  77 E0			        ja rm_loop 
+				 
+ 0093  8A D0			        mov dl, al 
+ 0095  B4 02			        mov ah, 02h 
+ 0097  CD 21			        int 21h 
+				 
+ 0099  2C 30			        sub al, '0' 
+ 009B  32 E4			        xor ah, ah 
+ 009D  8B C8			        mov cx, ax 
+ 009F  8B C6			        mov ax, si 
+ 00A1  BB 000A			        mov bx, 10 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Page     1-4
+
+
+ 00A4  F7 E3			        mul bx 
+ 00A6  03 C1			        add ax, cx 
+ 00A8  8B F0			        mov si, ax 
+ 00AA  45			        inc bp 
+ 00AB  EB C6			        jmp rm_loop 
+				 
+ 00AD				rm_eof: 
+ 00AD  83 FD 00			        cmp bp, 0 
+ 00B0  74 16			        je rm_bad 
+ 00B2				rm_done: 
+ 00B2  83 FE 01			        cmp si, 1 
+ 00B5  72 11			        jb rm_bad 
+ 00B7  83 FE 0C			        cmp si, 12 
+ 00BA  77 0C			        ja rm_bad 
+ 00BC  89 36 0000 E		        mov month, si 
+				        NEWLINE 
+ 00C0  BA 0000 E             2	    mov dx, offset crlf 
+ 00C3  B4 09                 2	    mov ah, 09h 
+ 00C5  CD 21                 2	    int 21h 
+ 00C7  CB			        ret 
+ 00C8				rm_bad: 
+				        PRINTSTR badmsg 
+ 00C8  BA 0000 E             1	    mov dx, offset badmsg 
+ 00CB  B4 09                 1	    mov ah, 09h 
+ 00CD  CD 21                 1	    int 21h 
+ 00CF  EB 97			        jmp rm_again 
+ 00D1				read_month endp 
+				 
+ 00D1				INPUT   ends 
+				        end 
+
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Symbols-1
+
+
+Macros:
+
+		N a m e			Lines
+
+NEWLINE  . . . . . . . . . . . .  	   1
+POPALL . . . . . . . . . . . . .  	   6
+PRINTSTR . . . . . . . . . . . .  	   3
+PUSHALL  . . . . . . . . . . . .  	   6
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+INPUT  . . . . . . . . . . . . .  	00D1	PARA	PUBLIC	'CODE'
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+BADMSG . . . . . . . . . . . . .  	V BYTE	0000		External
+
+CRLF . . . . . . . . . . . . . .  	V BYTE	0000		External
+
+MONTH  . . . . . . . . . . . . .  	V WORD	0000		External
+
+P_MON  . . . . . . . . . . . . .  	V BYTE	0000		External
+P_YEAR . . . . . . . . . . . . .  	V BYTE	0000		External
+
+READ_MONTH . . . . . . . . . . .  	F PROC	0068	INPUT	Global	Length = 0069
+READ_YEAR  . . . . . . . . . . .  	F PROC	0000	INPUT	Global	Length = 0068
+RM_AGAIN . . . . . . . . . . . .  	L NEAR	0068	INPUT
+RM_BAD . . . . . . . . . . . . .  	L NEAR	00C8	INPUT
+RM_DONE  . . . . . . . . . . . .  	L NEAR	00B2	INPUT
+RM_EOF . . . . . . . . . . . . .  	L NEAR	00AD	INPUT
+RM_LOOP  . . . . . . . . . . . .  	L NEAR	0073	INPUT
+RM_NOTCR . . . . . . . . . . . .  	L NEAR	0083	INPUT
+RY_AGAIN . . . . . . . . . . . .  	L NEAR	0000	INPUT
+RY_BAD . . . . . . . . . . . . .  	L NEAR	005F	INPUT
+RY_DONE  . . . . . . . . . . . .  	L NEAR	003D	INPUT
+RY_LOOP  . . . . . . . . . . . .  	L NEAR	000B	INPUT
+
+YEAR . . . . . . . . . . . . . .  	V WORD	0000		External
+
+@FILENAME  . . . . . . . . . . .  	TEXT  input		
+
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:05
+                                                             Symbols-2
+
+
+
+    158 Source  Lines
+    179 Total   Lines
+     26 Symbols
+
+  51212 + 448948 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors

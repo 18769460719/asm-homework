@@ -1,0 +1,375 @@
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:07
+                                                             Page     1-1
+
+
+				﻿; ct2.asm —— 观察 call/ret 前后 CS�
+				�IP、SP 的变化 
+ct2.asm(1): warning A4001: Extra characters on line
+				; 每次打印一行：标签 + CS:IP + SP 
+				; IP 取的是“call 压栈的返回地址”�
+				��也就是调用返回后要执行的那条指
+				令的偏移。 
+				; SP 取的是“call 之前”的栈顶，方�
+				��对比压栈/弹栈。 
+				 
+ 0000				DATA    segment para public 'DATA' 
+ 0000  6D 61 69 6E 20 65 6E	    m1  db 'main entry        $' 
+       74 72 79 20 20 20 20	
+       20 20 20 20 24		
+ 0013  62 65 66 6F 72 65 20	    m2  db 'before near call  $' 
+       6E 65 61 72 20 63 61	
+       6C 6C 20 20 24		
+ 0026  69 6E 73 69 64 65 20	    m3  db 'inside near proc  $' 
+       6E 65 61 72 20 70 72	
+       6F 63 20 20 24		
+ 0039  61 66 74 65 72 20 20	    m4  db 'after  near call  $' 
+       6E 65 61 72 20 63 61	
+       6C 6C 20 20 24		
+ 004C  62 65 66 6F 72 65 20	    m5  db 'before far  call  $' 
+       66 61 72 20 20 63 61	
+       6C 6C 20 20 24		
+ 005F  69 6E 73 69 64 65 20	    m6  db 'inside far proc   $' 
+       66 61 72 20 70 72 6F	
+       63 20 20 20 24		
+ 0072  61 66 74 65 72 20 20	    m7  db 'after  far  call  $' 
+       66 61 72 20 20 63 61	
+       6C 6C 20 20 24		
+ 0085  20 20 43 53 3A 49 50	    cmsg db '  CS:IP=$' 
+       3D 24			
+ 008E  20 20 53 50 3D 24	    smsg db '  SP=$' 
+ 0094  0D 0A 24			    crlf db 0Dh,0Ah,'$' 
+ 0097				DATA    ends 
+				 
+ 0000				STACK   segment para stack 'STACK' 
+ 0000  0200[			    db 512 dup(0) 
+	   00			
+			 ]	
+				
+ 0200				STACK   ends 
+				 
+ 0000				SEG1    segment para public 'CODE' 
+				        assume cs:SEG1, ds:DATA, ss:STACK 
+				 
+ 0000				start: 
+ 0000  B8 ---- R		        mov ax, DATA 
+ 0003  8E D8			        mov ds, ax 
+ 0005  B8 ---- R		        mov ax, STACK 
+ 0008  8E D0			        mov ss, ax 
+ 000A  BC 0200			        mov sp, 512 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:07
+                                                             Page     1-2
+
+
+				 
+ 000D  BA 0000 R		        mov dx, offset m1 
+ 0010  E8 0041 R		        call show_near 
+				 
+ 0013  BA 0013 R		        mov dx, offset m2 
+ 0016  E8 0041 R		        call show_near 
+				 
+ 0019  E8 0038 R		        call near_proc 
+				 
+ 001C  BA 0039 R		        mov dx, offset m4 
+ 001F  E8 0041 R		        call show_near 
+				 
+ 0022  BA 004C R		        mov dx, offset m5 
+ 0025  E8 0041 R		        call show_near 
+				 
+ 0028  9A 0000 ---- R		        call far ptr far_proc 
+				 
+ 002D  BA 0072 R		        mov dx, offset m7 
+ 0030  E8 0041 R		        call show_near 
+				 
+ 0033  B8 4C00			        mov ax, 4C00h 
+ 0036  CD 21			        int 21h 
+				 
+ 0038				near_proc proc near 
+ 0038  52			        push dx 
+ 0039  BA 0026 R		        mov dx, offset m3 
+ 003C  E8 0041 R		        call show_near 
+ 003F  5A			        pop dx 
+ 0040  C3			        ret 
+ 0041				near_proc endp 
+				 
+				; 打印当前（近过程内）的 CS、返回
+				地址、调用前 SP 
+ 0041				show_near proc near 
+ 0041  55			        push bp 
+ 0042  8B EC			        mov bp, sp 
+ 0044  50			        push ax 
+ 0045  53			        push bx 
+ 0046  51			        push cx 
+ 0047  52			        push dx 
+ 0048  56			        push si 
+				 
+ 0049  B4 09			        mov ah, 09h          ; DX 里是调用�
+				��给的标签 
+ 004B  CD 21			        int 21h 
+				 
+ 004D  8B 5E 02			        mov bx, [bp+2]       ; 返回地址 = c
+				all 之后的 IP 
+ 0050  8B F5			        mov si, bp 
+ 0052  83 C6 04			        add si, 4            ; 调用前的 SP 
+				 
+ 0055  BA 0085 R		        mov dx, offset cmsg 
+ 0058  B4 09			        mov ah, 09h 
+ 005A  CD 21			        int 21h 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:07
+                                                             Page     1-3
+
+
+				 
+ 005C  8C C8			        mov ax, cs 
+ 005E  E8 008A R		        call hex4 
+ 0061  B2 3A			        mov dl, ':' 
+ 0063  E8 0085 R		        call putc 
+ 0066  8B C3			        mov ax, bx 
+ 0068  E8 008A R		        call hex4 
+				 
+ 006B  BA 008E R		        mov dx, offset smsg 
+ 006E  B4 09			        mov ah, 09h 
+ 0070  CD 21			        int 21h 
+ 0072  8B C6			        mov ax, si 
+ 0074  E8 008A R		        call hex4 
+				 
+ 0077  BA 0094 R		        mov dx, offset crlf 
+ 007A  B4 09			        mov ah, 09h 
+ 007C  CD 21			        int 21h 
+				 
+ 007E  5E			        pop si 
+ 007F  5A			        pop dx 
+ 0080  59			        pop cx 
+ 0081  5B			        pop bx 
+ 0082  58			        pop ax 
+ 0083  5D			        pop bp 
+ 0084  C3			        ret 
+ 0085				show_near endp 
+				 
+ 0085				putc proc near 
+ 0085  B4 02			        mov ah, 02h 
+ 0087  CD 21			        int 21h 
+ 0089  C3			        ret 
+ 008A				putc endp 
+				 
+ 008A				hex4 proc near 
+ 008A  50			        push ax 
+ 008B  53			        push bx 
+ 008C  51			        push cx 
+ 008D  52			        push dx 
+ 008E  8B D8			        mov bx, ax 
+ 0090  B9 0004			        mov cx, 4 
+ 0093				h4: 
+ 0093  D1 C3			        rol bx, 1 
+ 0095  D1 C3			        rol bx, 1 
+ 0097  D1 C3			        rol bx, 1 
+ 0099  D1 C3			        rol bx, 1 
+ 009B  8A D3			        mov dl, bl 
+ 009D  80 E2 0F			        and dl, 0Fh 
+ 00A0  80 FA 09			        cmp dl, 9 
+ 00A3  76 03			        jbe h4d 
+ 00A5  80 C2 07			        add dl, 7 
+ 00A8				h4d: 
+ 00A8  80 C2 30			        add dl, '0' 
+ 00AB  E8 0085 R		        call putc 
+ 00AE  E2 E3			        loop h4 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:07
+                                                             Page     1-4
+
+
+ 00B0  5A			        pop dx 
+ 00B1  59			        pop cx 
+ 00B2  5B			        pop bx 
+ 00B3  58			        pop ax 
+ 00B4  C3			        ret 
+ 00B5				hex4 endp 
+				 
+ 00B5				SEG1    ends 
+				 
+				; ================= 第二个代码段 ========
+				========= 
+ 0000				SEG2    segment para public 'CODE' 
+				        assume cs:SEG2 
+				 
+ 0000				far_proc proc far 
+ 0000  55			        push bp 
+ 0001  8B EC			        mov bp, sp 
+ 0003  50			        push ax 
+ 0004  53			        push bx 
+ 0005  51			        push cx 
+ 0006  52			        push dx 
+ 0007  56			        push si 
+ 0008  1E			        push ds 
+				 
+ 0009  B8 ---- R		        mov ax, seg DATA 
+ 000C  8E D8			        mov ds, ax 
+				 
+ 000E  8B F5			        mov si, bp 
+ 0010  83 C6 06			        add si, 6            ; 远调用前的 
+				SP 
+ 0013  8B 5E 02			        mov bx, [bp+2]       ; 返回 IP 
+ 0016  8B 4E 04			        mov cx, [bp+4]       ; 返回 CS（调�
+				��者） 
+				 
+ 0019  BA 005F R		        mov dx, offset m6 
+ 001C  B4 09			        mov ah, 09h 
+ 001E  CD 21			        int 21h 
+				 
+ 0020  BA 0085 R		        mov dx, offset cmsg 
+ 0023  B4 09			        mov ah, 09h 
+ 0025  CD 21			        int 21h 
+				 
+ 0027  8C C8			        mov ax, cs 
+ 0029  E8 0082 R		        call hex4f 
+ 002C  B2 3A			        mov dl, ':' 
+ 002E  B4 02			        mov ah, 02h 
+ 0030  CD 21			        int 21h 
+ 0032  B8 0035 R		        mov ax, offset far_next 
+ 0035				far_next: 
+ 0035  E8 0082 R		        call hex4f 
+				 
+ 0038  BA 008E R		        mov dx, offset smsg 
+ 003B  B4 09			        mov ah, 09h 
+ 003D  CD 21			        int 21h 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:07
+                                                             Page     1-5
+
+
+ 003F  8B C6			        mov ax, si 
+ 0041  E8 0082 R		        call hex4f 
+				 
+				        ; 再补一段：返回 CS 也打出来
+				 
+ 0044  B2 20			        mov dl, ' ' 
+ 0046  B4 02			        mov ah, 02h 
+ 0048  CD 21			        int 21h 
+ 004A  B2 72			        mov dl, 'r' 
+ 004C  B4 02			        mov ah, 02h 
+ 004E  CD 21			        int 21h 
+ 0050  B2 65			        mov dl, 'e' 
+ 0052  B4 02			        mov ah, 02h 
+ 0054  CD 21			        int 21h 
+ 0056  B2 74			        mov dl, 't' 
+ 0058  B4 02			        mov ah, 02h 
+ 005A  CD 21			        int 21h 
+ 005C  B2 43			        mov dl, 'C' 
+ 005E  B4 02			        mov ah, 02h 
+ 0060  CD 21			        int 21h 
+ 0062  B2 53			        mov dl, 'S' 
+ 0064  B4 02			        mov ah, 02h 
+ 0066  CD 21			        int 21h 
+ 0068  B2 3D			        mov dl, '=' 
+ 006A  B4 02			        mov ah, 02h 
+ 006C  CD 21			        int 21h 
+ 006E  8B C1			        mov ax, cx 
+ 0070  E8 0082 R		        call hex4f 
+				 
+ 0073  BA 0094 R		        mov dx, offset crlf 
+ 0076  B4 09			        mov ah, 09h 
+ 0078  CD 21			        int 21h 
+				 
+ 007A  1F			        pop ds 
+ 007B  5E			        pop si 
+ 007C  5A			        pop dx 
+ 007D  59			        pop cx 
+ 007E  5B			        pop bx 
+ 007F  58			        pop ax 
+ 0080  5D			        pop bp 
+ 0081  CB			        ret 
+ 0082				far_proc endp 
+				 
+ 0082				hex4f proc near 
+ 0082  50			        push ax 
+ 0083  53			        push bx 
+ 0084  51			        push cx 
+ 0085  52			        push dx 
+ 0086  8B D8			        mov bx, ax 
+ 0088  B9 0004			        mov cx, 4 
+ 008B				h4f: 
+ 008B  D1 C3			        rol bx, 1 
+ 008D  D1 C3			        rol bx, 1 
+ 008F  D1 C3			        rol bx, 1 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:07
+                                                             Page     1-6
+
+
+ 0091  D1 C3			        rol bx, 1 
+ 0093  8A D3			        mov dl, bl 
+ 0095  80 E2 0F			        and dl, 0Fh 
+ 0098  80 FA 09			        cmp dl, 9 
+ 009B  76 03			        jbe h4fd 
+ 009D  80 C2 07			        add dl, 7 
+ 00A0				h4fd: 
+ 00A0  80 C2 30			        add dl, '0' 
+ 00A3  B4 02			        mov ah, 02h 
+ 00A5  CD 21			        int 21h 
+ 00A7  E2 E2			        loop h4f 
+ 00A9  5A			        pop dx 
+ 00AA  59			        pop cx 
+ 00AB  5B			        pop bx 
+ 00AC  58			        pop ax 
+ 00AD  C3			        ret 
+ 00AE				hex4f endp 
+				 
+ 00AE				SEG2    ends 
+				        end start 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:07
+                                                             Symbols-1
+
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+DATA . . . . . . . . . . . . . .  	0097	PARA	PUBLIC	'DATA'
+SEG1 . . . . . . . . . . . . . .  	00B5	PARA	PUBLIC	'CODE'
+SEG2 . . . . . . . . . . . . . .  	00AE	PARA	PUBLIC	'CODE'
+STACK  . . . . . . . . . . . . .  	0200	PARA	STACK	'STACK'
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+CMSG . . . . . . . . . . . . . .  	L BYTE	0085	DATA
+CRLF . . . . . . . . . . . . . .  	L BYTE	0094	DATA
+
+FAR_NEXT . . . . . . . . . . . .  	L NEAR	0035	SEG2
+FAR_PROC . . . . . . . . . . . .  	F PROC	0000	SEG2	Length = 0082
+
+H4 . . . . . . . . . . . . . . .  	L NEAR	0093	SEG1
+H4D  . . . . . . . . . . . . . .  	L NEAR	00A8	SEG1
+H4F  . . . . . . . . . . . . . .  	L NEAR	008B	SEG2
+H4FD . . . . . . . . . . . . . .  	L NEAR	00A0	SEG2
+HEX4 . . . . . . . . . . . . . .  	N PROC	008A	SEG1	Length = 002B
+HEX4F  . . . . . . . . . . . . .  	N PROC	0082	SEG2	Length = 002C
+
+M1 . . . . . . . . . . . . . . .  	L BYTE	0000	DATA
+M2 . . . . . . . . . . . . . . .  	L BYTE	0013	DATA
+M3 . . . . . . . . . . . . . . .  	L BYTE	0026	DATA
+M4 . . . . . . . . . . . . . . .  	L BYTE	0039	DATA
+M5 . . . . . . . . . . . . . . .  	L BYTE	004C	DATA
+M6 . . . . . . . . . . . . . . .  	L BYTE	005F	DATA
+M7 . . . . . . . . . . . . . . .  	L BYTE	0072	DATA
+
+NEAR_PROC  . . . . . . . . . . .  	N PROC	0038	SEG1	Length = 0009
+
+PUTC . . . . . . . . . . . . . .  	N PROC	0085	SEG1	Length = 0005
+
+SHOW_NEAR  . . . . . . . . . . .  	N PROC	0041	SEG1	Length = 0044
+SMSG . . . . . . . . . . . . . .  	L BYTE	008E	DATA
+START  . . . . . . . . . . . . .  	L NEAR	0000	SEG1
+
+@FILENAME  . . . . . . . . . . .  	TEXT  ct2		
+
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:07
+                                                             Symbols-2
+
+
+
+    260 Source  Lines
+    260 Total   Lines
+     29 Symbols
+
+  51072 + 449088 Bytes symbol space free
+
+      1 Warning Errors
+      0 Severe  Errors

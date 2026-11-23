@@ -1,0 +1,85 @@
+作业7 验证记录
+================
+
+一、编译与链接
+--------------
+在 DOSBox 0.74 + MASM 5.0 + LINK 3.60 下依次执行：
+
+  masm main.asm;
+  masm input.asm;
+  masm calc.asm;
+  masm print.asm;
+  link main+input+calc+print,cal7.exe;
+
+四个模块分别产生 MAIN.OBJ、INPUT.OBJ、CALC.OBJ、PRINT.OBJ，链接后生成
+CAL7.EXE（3634 字节），无警告、无错误。
+
+ct2.asm 单独编译链接生成 CT2.EXE，用于观察 call/ret 前后的 CS:IP、SP。
+
+二、日历输出验证（9 组）
+------------------------
+用输入文件把年份、月份喂给 CAL7.EXE，把输出重定向到文件，再用 Python 的
+calendar 模块生成同样的文本逐行对比：
+
+  序号  年-月      结果
+  1     1900-01    OK
+  2     1900-02    OK
+  3     2000-02    OK（闰年，2 月 29 天）
+  4     2024-02    OK（闰年）
+  5     2026-11    OK
+  6     2099-12    OK（1900-2099 边界，跨 200 年的星期计算）
+  7     1999-12    OK
+  8     2001-01    OK
+  9     2023-03    OK
+
+9 组全部一致（提示行、年/月标题、星期表头、每行 7 天、末尾换行）。
+其中 1900 年按“整百年必须被 400 整除才是闰年”处理，2099-12 的 1 号是星期二，
+与 Python calendar 一致。
+
+三、call 机器码摘录
+-------------------
+docs/main.lst（跨文件远调用，段重定位）：
+
+  000D  9A 0000 ---- E        call far ptr read_year
+  0012  9A 0000 ---- E        call far ptr read_month
+  0017  9A 0000 ---- E        call far ptr compute
+
+docs/ct2.lst（同文件、不同代码段的远调用）：
+
+  0028  9A 0000 ---- R        call far ptr far_proc
+
+docs/print.lst（同段近调用、近返回、带参远返回）：
+
+  0014  E8 0000 R             call putc
+  0004  C3                    ret
+  00E4  CA 0004               ret 4
+
+docs/ct2.lst（远过程返回）：
+
+  0081  CB                    ret
+
+结论：近调用/近返回是 E8/C3，只涉及 IP；远调用/远返回是 9A/CB，涉及 CS:IP；
+跨文件与跨段在机器码上同为 9A，段基址由 LINK 填。
+
+四、CS:IP、SP 实测（CT2.EXE）
+-----------------------------
+  main entry          CS:IP=01CC:0013  SP=0200
+  before near call    CS:IP=01CC:0019  SP=0200
+  inside near proc    CS:IP=01CC:003F  SP=01FC
+  after  near call    CS:IP=01CC:0022  SP=0200
+  before far  call    CS:IP=01CC:0028  SP=0200
+  inside far proc     CS:IP=01D8:0035  SP=0200
+  after  far  call    CS:IP=01CC:0033  SP=0200
+
+解释：
+- 近调用只压 IP，SP 减 2；近过程内部又 push 了 dx，所以显示 01FC。
+- 远调用压 CS、IP，SP 减 4；进入 far_proc 后 CS 由 01CC 变成 01D8。
+- 返回时近返回弹 IP、远返回弹 IP 和 CS，SP 都回到 0200，CS 回到 01CC。
+- print_title / print_body 用 ret 4，返回时额外把 SP 加 4，丢掉两个参数。
+
+五、说明
+--------
+- 验证用的输入文件（T1.IN ~ T9.IN）和输出文件是临时文件，没有放进仓库；
+  运行时按“年份回车、月份回车”输入即可。
+- 截图：docs/calendar-run.png（2026-11 运行结果）、docs/calltrace.png（CS:IP/SP 输出）。
+- 机器码对照和单步观察的完整说明见 docs/call-compare.md。

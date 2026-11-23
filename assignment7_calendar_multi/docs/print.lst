@@ -1,0 +1,398 @@
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:06
+                                                             Page     1-1
+
+
+				; print.asm —— 作业7：输出模块 
+				; 对外三个远过程：print_title / print_h
+				ead / print_body 
+				; 内部有近过程 putc、print_dec、print_y
+				ear。 
+				; 这里用宏 PUSHALL/POPALL 保护寄存器�
+				�用 NEWLINE 宏换行。 
+				 
+				        include macros.inc 
+			     C	; macros.inc —— 作业7 公共宏定义 
+			     C	; 宏汇编：把常用的一段指令序列起
+				个名字，展开时直接替换成指令， 
+			     C	; 不产生 call/ret 的开销，也不占额�
+				�的代码段。 
+			     C	 
+			     C	; 保存/恢复常用寄存器（打印类过�
+				�里反复用到） 
+			     C	PUSHALL macro 
+			     C	    push ax 
+			     C	    push bx 
+			     C	    push cx 
+			     C	    push dx 
+			     C	    push si 
+			     C	    push di 
+			     C	endm 
+			     C	 
+			     C	POPALL macro 
+			     C	    pop di 
+			     C	    pop si 
+			     C	    pop dx 
+			     C	    pop cx 
+			     C	    pop bx 
+			     C	    pop ax 
+			     C	endm 
+			     C	 
+			     C	; 打印以 '$' 结尾的字符串 
+			     C	PRINTSTR macro msg 
+			     C	    mov dx, offset msg 
+			     C	    mov ah, 09h 
+			     C	    int 21h 
+			     C	endm 
+			     C	 
+			     C	; 换行 
+			     C	NEWLINE macro 
+			     C	    PRINTSTR crlf 
+			     C	endm 
+				 
+				 
+				        extrn year:word, month:word, first:word
+				, ndays:word 
+				        extrn mnames:byte, crlf:byte, whead:byt
+				e 
+				 
+ 0000				PRINT   segment para public 'CODE' 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:06
+                                                             Page     1-2
+
+
+				        assume cs:PRINT 
+				 
+				; ---------------- 内部：输出 DL 中的一
+				个字符 ---------------- 
+ 0000				putc proc near 
+ 0000  B4 02			        mov ah, 02h 
+ 0002  CD 21			        int 21h 
+ 0004  C3			        ret 
+ 0005				putc endp 
+				 
+				; ---------------- 内部：输出 AX（0-99）
+				，占 3 列右对齐 ---------------- 
+ 0005				print_dec proc near 
+				        PUSHALL 
+ 0005  50                    1	    push ax 
+ 0006  53                    1	    push bx 
+ 0007  51                    1	    push cx 
+ 0008  52                    1	    push dx 
+ 0009  56                    1	    push si 
+ 000A  57                    1	    push di 
+ 000B  8B D8			        mov bx, ax 
+ 000D  83 FB 0A			        cmp bx, 10 
+ 0010  73 15			        jae pd_two 
+				 
+ 0012  B2 20			        mov dl, ' ' 
+ 0014  E8 0000 R		        call putc 
+ 0017  B2 20			        mov dl, ' ' 
+ 0019  E8 0000 R		        call putc 
+ 001C  8A D3			        mov dl, bl 
+ 001E  80 C2 30			        add dl, '0' 
+ 0021  E8 0000 R		        call putc 
+ 0024  EB 21 90			        jmp pd_done 
+				 
+ 0027				pd_two: 
+ 0027  B2 20			        mov dl, ' ' 
+ 0029  E8 0000 R		        call putc 
+ 002C  8B C3			        mov ax, bx 
+ 002E  33 D2			        xor dx, dx 
+ 0030  BB 000A			        mov bx, 10 
+ 0033  F7 F3			        div bx 
+ 0035  8A DA			        mov bl, dl 
+ 0037  8A D0			        mov dl, al 
+ 0039  80 C2 30			        add dl, '0' 
+ 003C  E8 0000 R		        call putc 
+ 003F  8A D3			        mov dl, bl 
+ 0041  80 C2 30			        add dl, '0' 
+ 0044  E8 0000 R		        call putc 
+				 
+ 0047				pd_done: 
+				        POPALL 
+ 0047  5F                    1	    pop di 
+ 0048  5E                    1	    pop si 
+ 0049  5A                    1	    pop dx 
+ 004A  59                    1	    pop cx 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:06
+                                                             Page     1-3
+
+
+ 004B  5B                    1	    pop bx 
+ 004C  58                    1	    pop ax 
+ 004D  C3			        ret 
+ 004E				print_dec endp 
+				 
+				; ---------------- 内部：输出四位年份 
+				---------------- 
+ 004E				print_year proc near 
+				        PUSHALL 
+ 004E  50                    1	    push ax 
+ 004F  53                    1	    push bx 
+ 0050  51                    1	    push cx 
+ 0051  52                    1	    push dx 
+ 0052  56                    1	    push si 
+ 0053  57                    1	    push di 
+ 0054  8B F0			        mov si, ax 
+				 
+ 0056  8B C6			        mov ax, si 
+ 0058  33 D2			        xor dx, dx 
+ 005A  BB 03E8			        mov bx, 1000 
+ 005D  F7 F3			        div bx 
+ 005F  8B CA			        mov cx, dx 
+ 0061  8A D0			        mov dl, al 
+ 0063  80 C2 30			        add dl, '0' 
+ 0066  E8 0000 R		        call putc 
+				 
+ 0069  8B C1			        mov ax, cx 
+ 006B  33 D2			        xor dx, dx 
+ 006D  BB 0064			        mov bx, 100 
+ 0070  F7 F3			        div bx 
+ 0072  8B CA			        mov cx, dx 
+ 0074  8A D0			        mov dl, al 
+ 0076  80 C2 30			        add dl, '0' 
+ 0079  E8 0000 R		        call putc 
+				 
+ 007C  8B C1			        mov ax, cx 
+ 007E  33 D2			        xor dx, dx 
+ 0080  BB 000A			        mov bx, 10 
+ 0083  F7 F3			        div bx 
+ 0085  8B CA			        mov cx, dx 
+ 0087  8A D0			        mov dl, al 
+ 0089  80 C2 30			        add dl, '0' 
+ 008C  E8 0000 R		        call putc 
+				 
+ 008F  8A D1			        mov dl, cl 
+ 0091  80 C2 30			        add dl, '0' 
+ 0094  E8 0000 R		        call putc 
+				 
+				        POPALL 
+ 0097  5F                    1	    pop di 
+ 0098  5E                    1	    pop si 
+ 0099  5A                    1	    pop dx 
+ 009A  59                    1	    pop cx 
+ 009B  5B                    1	    pop bx 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:06
+                                                             Page     1-4
+
+
+ 009C  58                    1	    pop ax 
+ 009D  C3			        ret 
+ 009E				print_year endp 
+				 
+				; ---------------- 对外：标题 “2026  Nov
+				ember” ---------------- 
+				; 参数在堆栈：[bp+6]=year, [bp+8]=month 
+				        public print_title 
+ 009E				print_title proc far 
+ 009E  55			        push bp 
+ 009F  8B EC			        mov bp, sp 
+				        PUSHALL 
+ 00A1  50                    1	    push ax 
+ 00A2  53                    1	    push bx 
+ 00A3  51                    1	    push cx 
+ 00A4  52                    1	    push dx 
+ 00A5  56                    1	    push si 
+ 00A6  57                    1	    push di 
+				 
+ 00A7  8B 46 06			        mov ax, [bp+6] 
+ 00AA  E8 004E R		        call print_year 
+				 
+ 00AD  B2 20			        mov dl, ' ' 
+ 00AF  E8 0000 R		        call putc 
+ 00B2  B2 20			        mov dl, ' ' 
+ 00B4  E8 0000 R		        call putc 
+				 
+ 00B7  8B 46 08			        mov ax, [bp+8] 
+ 00BA  48			        dec ax 
+ 00BB  BB 0009			        mov bx, 9 
+ 00BE  F7 E3			        mul bx 
+ 00C0  BE 0000 E		        mov si, offset mnames 
+ 00C3  03 F0			        add si, ax 
+ 00C5  B9 0009			        mov cx, 9 
+ 00C8				pt_name: 
+ 00C8  8A 14			        mov dl, [si] 
+ 00CA  80 FA 20			        cmp dl, ' ' 
+ 00CD  74 07			        je pt_done 
+ 00CF  E8 0000 R		        call putc 
+ 00D2  46			        inc si 
+ 00D3  49			        dec cx 
+ 00D4  75 F2			        jnz pt_name 
+ 00D6				pt_done: 
+				        NEWLINE 
+ 00D6  BA 0000 E             2	    mov dx, offset crlf 
+ 00D9  B4 09                 2	    mov ah, 09h 
+ 00DB  CD 21                 2	    int 21h 
+				 
+				        POPALL 
+ 00DD  5F                    1	    pop di 
+ 00DE  5E                    1	    pop si 
+ 00DF  5A                    1	    pop dx 
+ 00E0  59                    1	    pop cx 
+ 00E1  5B                    1	    pop bx 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:06
+                                                             Page     1-5
+
+
+ 00E2  58                    1	    pop ax 
+ 00E3  5D			        pop bp 
+ 00E4  CA 0004			        ret 4 
+ 00E7				print_title endp 
+				 
+				; ---------------- 对外：星期表头 ------
+				---------- 
+				        public print_head 
+ 00E7				print_head proc far 
+ 00E7  52			        push dx 
+				        PRINTSTR whead 
+ 00E8  BA 0000 E             1	    mov dx, offset whead 
+ 00EB  B4 09                 1	    mov ah, 09h 
+ 00ED  CD 21                 1	    int 21h 
+				        NEWLINE 
+ 00EF  BA 0000 E             2	    mov dx, offset crlf 
+ 00F2  B4 09                 2	    mov ah, 09h 
+ 00F4  CD 21                 2	    int 21h 
+ 00F6  5A			        pop dx 
+ 00F7  CB			        ret 
+ 00F8				print_head endp 
+				 
+				; ---------------- 对外：日历主体 ------
+				---------- 
+				; 参数：[bp+6]=first, [bp+8]=ndays 
+				        public print_body 
+ 00F8				print_body proc far 
+ 00F8  55			        push bp 
+ 00F9  8B EC			        mov bp, sp 
+				        PUSHALL 
+ 00FB  50                    1	    push ax 
+ 00FC  53                    1	    push bx 
+ 00FD  51                    1	    push cx 
+ 00FE  52                    1	    push dx 
+ 00FF  56                    1	    push si 
+ 0100  57                    1	    push di 
+				 
+ 0101  8B 4E 06			        mov cx, [bp+6] 
+ 0104  83 F9 00			        cmp cx, 0 
+ 0107  74 12			        je pb_row 
+ 0109				pb_blank: 
+ 0109  B2 20			        mov dl, ' ' 
+ 010B  E8 0000 R		        call putc 
+ 010E  B2 20			        mov dl, ' ' 
+ 0110  E8 0000 R		        call putc 
+ 0113  B2 20			        mov dl, ' ' 
+ 0115  E8 0000 R		        call putc 
+ 0118  49			        dec cx 
+ 0119  75 EE			        jnz pb_blank 
+				 
+ 011B				pb_row: 
+ 011B  8B 4E 06			        mov cx, [bp+6] 
+ 011E  BE 0001			        mov si, 1 
+ 0121  8B 5E 08			        mov bx, [bp+8] 
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:06
+                                                             Page     1-6
+
+
+ 0124				pb_loop: 
+ 0124  8B C6			        mov ax, si 
+ 0126  E8 0005 R		        call print_dec 
+ 0129  46			        inc si 
+ 012A  41			        inc cx 
+ 012B  83 F9 07			        cmp cx, 7 
+ 012E  75 09			        jne pb_next 
+				        NEWLINE 
+ 0130  BA 0000 E             2	    mov dx, offset crlf 
+ 0133  B4 09                 2	    mov ah, 09h 
+ 0135  CD 21                 2	    int 21h 
+ 0137  33 C9			        xor cx, cx 
+ 0139				pb_next: 
+ 0139  4B			        dec bx 
+ 013A  75 E8			        jnz pb_loop 
+				 
+ 013C  83 F9 00			        cmp cx, 0 
+ 013F  74 07			        je pb_done 
+				        NEWLINE 
+ 0141  BA 0000 E             2	    mov dx, offset crlf 
+ 0144  B4 09                 2	    mov ah, 09h 
+ 0146  CD 21                 2	    int 21h 
+ 0148				pb_done: 
+				        POPALL 
+ 0148  5F                    1	    pop di 
+ 0149  5E                    1	    pop si 
+ 014A  5A                    1	    pop dx 
+ 014B  59                    1	    pop cx 
+ 014C  5B                    1	    pop bx 
+ 014D  58                    1	    pop ax 
+ 014E  5D			        pop bp 
+ 014F  CA 0004			        ret 4 
+ 0152				print_body endp 
+				 
+ 0152				PRINT   ends 
+				        end 
+
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:06
+                                                             Symbols-1
+
+
+Macros:
+
+		N a m e			Lines
+
+NEWLINE  . . . . . . . . . . . .  	   1
+POPALL . . . . . . . . . . . . .  	   6
+PRINTSTR . . . . . . . . . . . .  	   3
+PUSHALL  . . . . . . . . . . . .  	   6
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+PRINT  . . . . . . . . . . . . .  	0152	PARA	PUBLIC	'CODE'
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+CRLF . . . . . . . . . . . . . .  	V BYTE	0000		External
+
+FIRST  . . . . . . . . . . . . .  	V WORD	0000		External
+
+MNAMES . . . . . . . . . . . . .  	V BYTE	0000		External
+MONTH  . . . . . . . . . . . . .  	V WORD	0000		External
+
+NDAYS  . . . . . . . . . . . . .  	V WORD	0000		External
+
+PB_BLANK . . . . . . . . . . . .  	L NEAR	0109	PRINT
+PB_DONE  . . . . . . . . . . . .  	L NEAR	0148	PRINT
+PB_LOOP  . . . . . . . . . . . .  	L NEAR	0124	PRINT
+PB_NEXT  . . . . . . . . . . . .  	L NEAR	0139	PRINT
+PB_ROW . . . . . . . . . . . . .  	L NEAR	011B	PRINT
+PD_DONE  . . . . . . . . . . . .  	L NEAR	0047	PRINT
+PD_TWO . . . . . . . . . . . . .  	L NEAR	0027	PRINT
+PRINT_BODY . . . . . . . . . . .  	F PROC	00F8	PRINT	Global	Length = 005A
+PRINT_DEC  . . . . . . . . . . .  	N PROC	0005	PRINT	Length = 0049
+PRINT_HEAD . . . . . . . . . . .  	F PROC	00E7	PRINT	Global	Length = 0011
+PRINT_TITLE  . . . . . . . . . .  	F PROC	009E	PRINT	Global	Length = 0049
+PRINT_YEAR . . . . . . . . . . .  	N PROC	004E	PRINT	Length = 0050
+PT_DONE  . . . . . . . . . . . .  	L NEAR	00D6	PRINT
+PT_NAME  . . . . . . . . . . . .  	L NEAR	00C8	PRINT
+PUTC . . . . . . . . . . . . . .  	N PROC	0000	PRINT	Length = 0005
+
+WHEAD  . . . . . . . . . . . . .  	V BYTE	0000		External
+
+YEAR . . . . . . . . . . . . . .  	V WORD	0000		External
+
+@FILENAME  . . . . . . . . . . .  	TEXT  print		
+
+Microsoft (R) Macro Assembler Version 5.00                  11/23/26 18:55:06
+                                                             Symbols-2
+
+
+
+    228 Source  Lines
+    296 Total   Lines
+     30 Symbols
+
+  51096 + 449064 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors

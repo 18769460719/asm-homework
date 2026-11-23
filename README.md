@@ -1,4 +1,4 @@
-﻿# 汇编语言课程作业
+# 汇编语言课程作业
 
 本仓库保存汇编语言课程各次作业的源码、说明和验证结果。
 
@@ -10,6 +10,7 @@
 - 第四次作业（九九乘法表纠错）：`assignment4_table_check/`
 - 第五次作业（递归调用）：`assignment5_fibonacci/`
 - 第六次作业（输出日历）：`assignment6_calendar/`
+- 第七次作业（多模块输出日历）：`assignment7_calendar_multi/`
 
 ## 第三次作业
 
@@ -61,5 +62,19 @@
 - [assignment6_calendar/README.md](assignment6_calendar/README.md)
 - [assignment6_calendar/verification.txt](assignment6_calendar/verification.txt)
 - [assignment6_calendar/docs/calendar-run.png](assignment6_calendar/docs/calendar-run.png)
+
+## 第七次作业
+
+### 多模块输出日历
+
+把第六次作业拆成 main / input / calc / print 四个源文件，用宏（`macros.inc`）
+和远过程调用组织程序；对照同段近调用、跨段远调用、跨文件远调用的机器码
+（`E8` / `9A` / `C3` / `CB` / `CA`），并用 `ct2.asm` 打印每次 call、ret 前后的
+CS:IP、SP 变化。
+
+- [assignment7_calendar_multi/README.md](assignment7_calendar_multi/README.md)
+- [assignment7_calendar_multi/verification.txt](assignment7_calendar_multi/verification.txt)
+- [assignment7_calendar_multi/docs/calendar-run.png](assignment7_calendar_multi/docs/calendar-run.png)
+- [assignment7_calendar_multi/docs/calltrace.png](assignment7_calendar_multi/docs/calltrace.png)
 
 
